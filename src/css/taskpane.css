@@ -1,0 +1,146 @@
+/* taskpane.css — 便利アドインセット / デート印 */
+:root {
+  --bg: #FAF9F6;
+  --surface: #FFFFFF;
+  --ink: #2A2622;
+  --muted: #6E675E;
+  --line: #E5E1D8;
+  --accent: #C13B2A;
+  --accent-dark: #A93223;
+  --paper: #FDFCF8;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Yu Gothic UI", "Yu Gothic", "Hiragino Sans", "Meiryo", sans-serif;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.app-header {
+  padding: 10px 14px 8px;
+  border-bottom: 2px solid var(--accent);
+  background: var(--surface);
+}
+.app-title { font-size: 10px; letter-spacing: 0.18em; color: var(--muted); }
+.tool-title { font-size: 16px; font-weight: 700; }
+.tool-title .ver {
+  font-size: 10px; font-weight: 400; color: var(--accent-dark);
+  border: 1px solid var(--accent-dark); border-radius: 3px;
+  padding: 0 4px; margin-left: 6px; vertical-align: 2px;
+}
+.host-mode { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+.tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--line); }
+.tab {
+  flex: 1; padding: 8px 4px; border: none; background: none;
+  font-family: inherit; font-size: 12px; color: var(--muted);
+  cursor: pointer; border-bottom: 2px solid transparent;
+}
+.tab.active { color: var(--accent-dark); border-bottom-color: var(--accent); font-weight: 700; }
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.status { min-height: 18px; padding: 2px 14px; font-size: 11px; color: var(--accent-dark); }
+.status.error { color: #A11A00; font-weight: 700; }
+
+.panel { padding: 10px 14px 20px; }
+
+/* 押印 */
+.stamp-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.stamp-item {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 6px;
+  padding: 6px 10px; cursor: pointer;
+}
+.stamp-item.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.stamp-item input { accent-color: var(--accent); }
+.thumb {
+  flex: 0 0 auto; width: 52px; height: 52px;
+  background: var(--paper); border: 1px solid var(--line); border-radius: 4px;
+  display: flex; align-items: center; justify-content: center; padding: 3px;
+}
+.thumb svg { width: 100%; height: 100%; }
+.sname { font-weight: 700; }
+
+.opt { display: flex; align-items: center; gap: 6px; margin: 8px 0; }
+.opt input { accent-color: var(--accent); }
+
+button {
+  font-family: inherit; font-size: 12px;
+  background: var(--surface); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 4px;
+  padding: 5px 12px; cursor: pointer;
+}
+button:hover { border-color: var(--accent); color: var(--accent-dark); }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+button.primary {
+  background: var(--accent); border-color: var(--accent); color: #FFFDF9;
+  font-weight: 700; padding: 8px 16px; width: 100%;
+}
+button.primary:hover { background: var(--accent-dark); color: #FFFDF9; }
+button.primary:disabled { opacity: 0.5; cursor: default; }
+button.danger:hover { border-color: #A11A00; color: #A11A00; }
+
+.hint { font-size: 10.5px; color: var(--muted); margin-top: 10px; }
+
+/* デザイナ */
+.preview-wrap { text-align: center; margin-bottom: 12px; }
+.paper {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 150px; height: 150px; padding: 10px;
+  background: var(--paper); border: 1px solid var(--line); border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(30, 20, 10, 0.1);
+}
+.paper svg { max-width: 100%; max-height: 100%; }
+.seedline {
+  font-family: Consolas, monospace; font-size: 9.5px; color: var(--muted);
+  margin: 6px 0; word-break: break-all;
+}
+.preview-btns { display: flex; gap: 6px; justify-content: center; }
+.preview-btns .primary { width: auto; padding: 5px 18px; }
+
+fieldset {
+  border: 1px solid var(--line); border-radius: 6px;
+  background: var(--surface); margin: 0 0 10px; padding: 8px 12px 10px;
+}
+legend { font-size: 11px; font-weight: 700; color: var(--accent-dark); padding: 0 4px; }
+form label { display: block; font-size: 11px; color: var(--muted); margin: 6px 0 2px; }
+form textarea {
+  display: block; width: 100%; font-family: inherit; font-size: 12px;
+  padding: 4px 6px; border: 1px solid var(--line); border-radius: 4px;
+  background: var(--bg); color: var(--ink); margin-top: 2px; resize: vertical;
+}
+.line-scales { margin: 2px 0 4px; }
+.line-scale {
+  display: grid; grid-template-columns: 1fr 90px; align-items: center; gap: 8px;
+}
+.line-scale span { font-size: 10.5px; color: var(--muted); }
+.line-scale input[type="range"] { margin-top: 0; }
+form input[type="text"], form input[type="number"], form select {
+  display: block; width: 100%; font-family: inherit; font-size: 12px;
+  padding: 4px 6px; border: 1px solid var(--line); border-radius: 4px;
+  background: var(--bg); color: var(--ink); margin-top: 2px;
+}
+form input[type="color"] { width: 100%; height: 28px; padding: 1px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); }
+form input[type="range"] { width: 100%; accent-color: var(--accent); margin-top: 8px; }
+form input:focus-visible, form select:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px; }
+
+/* ライブラリ */
+.lib-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.lib-item {
+  display: flex; gap: 10px; align-items: flex-start;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px;
+}
+.lib-main { flex: 1; min-width: 0; }
+.smeta { font-size: 10px; color: var(--muted); font-family: Consolas, monospace; }
+.lib-btns { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.lib-btns button { font-size: 11px; padding: 3px 8px; }
+.import-label { display: block; font-size: 11px; color: var(--muted); }
+.import-label input { display: block; margin-top: 4px; font-size: 11px; }
+
+.empty { color: var(--muted); font-size: 12px; }

@@ -1,0 +1,6 @@
+node_modules/
+deploy/manifest.prod.xml
+*.log
+deploy/stampset-setup.zip
+deploy/installer/manifest.prod.xml
+deploy/*.zip

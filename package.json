@@ -1,0 +1,20 @@
+{
+  "name": "excel-addin-set",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Excel便利アドインセット — 第1弾: デート印生成",
+  "scripts": {
+    "certs": "office-addin-dev-certs install",
+    "start": "http-server src -p 3000 -S -C %USERPROFILE%/.office-addin-dev-certs/localhost.crt -K %USERPROFILE%/.office-addin-dev-certs/localhost.key -c-1 --cors",
+    "start:http": "http-server src -p 3000 -c-1 --cors",
+    "sideload": "office-addin-debugging start manifest.xml desktop --no-debug",
+    "sideload:stop": "office-addin-debugging stop manifest.xml",
+    "validate": "office-addin-manifest validate manifest.xml"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1",
+    "office-addin-debugging": "^6.0.3",
+    "office-addin-dev-certs": "^2.0.3",
+    "office-addin-manifest": "^2.0.3"
+  }
+}

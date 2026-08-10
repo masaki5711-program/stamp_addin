@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  本番配布用マニフェストのテンプレート。
+  {{HOST_URL}} を実際のホスティングURL(例: https://<user>.github.io/addin-excel)に
+  すべて置換し、manifest.prod.xml として保存して配布する。
+  ※ Id は開発用と同じでよい(同一アドインとして更新扱いになる)。
+     別アドインとして併存させたい場合のみ新しいGUIDへ変更する。
+-->
+<OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+           xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
+           xsi:type="TaskPaneApp">
+  <Id>a512f6de-9cea-42a8-8f5e-a50782575550</Id>
+  <Version>1.0.0</Version>
+  <ProviderName>fujikawa</ProviderName>
+  <DefaultLocale>ja-JP</DefaultLocale>
+  <DisplayName DefaultValue="便利アドインセット"/>
+  <Description DefaultValue="デート印生成 — 日付を自動取得して押印できる電子日付印。第1弾ツール。"/>
+  <IconUrl DefaultValue="{{HOST_URL}}/assets/icon-32.png"/>
+  <HighResolutionIconUrl DefaultValue="{{HOST_URL}}/assets/icon-80.png"/>
+  <SupportUrl DefaultValue="{{HOST_URL}}/taskpane.html"/>
+  <AppDomains>
+    <AppDomain>{{HOST_URL}}</AppDomain>
+  </AppDomains>
+  <Hosts>
+    <Host Name="Workbook"/>
+  </Hosts>
+  <Requirements>
+    <Sets DefaultMinVersion="1.9">
+      <Set Name="ExcelApi" MinVersion="1.9"/>
+    </Sets>
+  </Requirements>
+  <DefaultSettings>
+    <SourceLocation DefaultValue="{{HOST_URL}}/taskpane.html"/>
+  </DefaultSettings>
+  <Permissions>ReadWriteDocument</Permissions>
+
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
+    <Hosts>
+      <Host xsi:type="Workbook">
+        <DesktopFormFactor>
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <OfficeTab id="TabHome">
+              <Group id="StampSet.Group1">
+                <Label resid="GroupLabel"/>
+                <Icon>
+                  <bt:Image size="16" resid="Icon16"/>
+                  <bt:Image size="32" resid="Icon32"/>
+                  <bt:Image size="80" resid="Icon80"/>
+                </Icon>
+                <Control xsi:type="Button" id="StampSet.TaskpaneButton">
+                  <Label resid="ButtonLabel"/>
+                  <Supertip>
+                    <Title resid="ButtonLabel"/>
+                    <Description resid="ButtonTip"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon16"/>
+                    <bt:Image size="32" resid="Icon32"/>
+                    <bt:Image size="80" resid="Icon80"/>
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>StampSetTaskpane</TaskpaneId>
+                    <SourceLocation resid="TaskpaneUrl"/>
+                  </Action>
+                </Control>
+              </Group>
+            </OfficeTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+    </Hosts>
+    <Resources>
+      <bt:Images>
+        <bt:Image id="Icon16" DefaultValue="{{HOST_URL}}/assets/icon-16.png"/>
+        <bt:Image id="Icon32" DefaultValue="{{HOST_URL}}/assets/icon-32.png"/>
+        <bt:Image id="Icon80" DefaultValue="{{HOST_URL}}/assets/icon-80.png"/>
+      </bt:Images>
+      <bt:Urls>
+        <bt:Url id="TaskpaneUrl" DefaultValue="{{HOST_URL}}/taskpane.html"/>
+      </bt:Urls>
+      <bt:ShortStrings>
+        <bt:String id="GroupLabel" DefaultValue="便利ツール"/>
+        <bt:String id="ButtonLabel" DefaultValue="デート印"/>
+      </bt:ShortStrings>
+      <bt:LongStrings>
+        <bt:String id="ButtonTip" DefaultValue="デート印を作成・押印します。日付は自動で当日になります。"/>
+      </bt:LongStrings>
+    </Resources>
+  </VersionOverrides>
+</OfficeApp>
