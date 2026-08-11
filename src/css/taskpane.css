@@ -1,4 +1,4 @@
-/* taskpane.css — 便利アドインセット / デート印 */
+/* taskpane.css — 便利アドインセット */
 :root {
   --bg: #FAF9F6;
   --surface: #FFFFFF;
@@ -21,20 +21,57 @@ body {
   line-height: 1.6;
 }
 
+/* ---- ヘッダー・シェル ---- */
 .app-header {
   padding: 10px 14px 8px;
   border-bottom: 2px solid var(--accent);
   background: var(--surface);
 }
+.head-row { display: flex; align-items: center; gap: 8px; }
+.back-btn {
+  flex: 0 0 auto;
+  width: 30px; height: 30px;
+  border: 1px solid var(--line); border-radius: 6px;
+  background: var(--bg); color: var(--accent-dark);
+  font-size: 15px; cursor: pointer;
+}
+.back-btn:hover { border-color: var(--accent); }
 .app-title { font-size: 10px; letter-spacing: 0.18em; color: var(--muted); }
 .tool-title { font-size: 16px; font-weight: 700; }
-.tool-title .ver {
-  font-size: 10px; font-weight: 400; color: var(--accent-dark);
-  border: 1px solid var(--accent-dark); border-radius: 3px;
-  padding: 0 4px; margin-left: 6px; vertical-align: 2px;
-}
 .host-mode { font-size: 10px; color: var(--muted); margin-top: 2px; }
 
+.status { min-height: 18px; padding: 2px 14px; font-size: 11px; color: var(--accent-dark); }
+.status.error { color: #A11A00; font-weight: 700; }
+
+.panel { padding: 10px 14px 20px; }
+
+/* ---- ホーム(ツールカード) ---- */
+.home-grid { display: flex; flex-direction: column; gap: 8px; }
+.tool-card {
+  display: flex; align-items: center; gap: 12px;
+  width: 100%; text-align: left;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+  padding: 10px 12px; cursor: pointer;
+  font-family: inherit; color: var(--ink);
+}
+.tool-card:hover { border-color: var(--accent); box-shadow: 0 1px 6px rgba(169, 50, 35, 0.12); }
+.tool-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.tool-card.disabled { opacity: 0.45; cursor: default; }
+.tool-card.disabled:hover { border-color: var(--line); box-shadow: none; }
+.tool-icon {
+  flex: 0 0 auto;
+  width: 36px; height: 36px; border-radius: 8px;
+  background: var(--accent); color: #FFFDF9;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; font-weight: 700;
+  font-family: "Yu Mincho", "Hiragino Mincho ProN", serif;
+}
+.tool-card.disabled .tool-icon { background: var(--muted); }
+.tool-card-body { display: flex; flex-direction: column; min-width: 0; }
+.tool-card-name { font-size: 13.5px; font-weight: 700; }
+.tool-card-desc { font-size: 10.5px; color: var(--muted); }
+
+/* ---- タブ(デート印内) ---- */
 .tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--line); }
 .tab {
   flex: 1; padding: 8px 4px; border: none; background: none;
@@ -44,31 +81,7 @@ body {
 .tab.active { color: var(--accent-dark); border-bottom-color: var(--accent); font-weight: 700; }
 .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 
-.status { min-height: 18px; padding: 2px 14px; font-size: 11px; color: var(--accent-dark); }
-.status.error { color: #A11A00; font-weight: 700; }
-
-.panel { padding: 10px 14px 20px; }
-
-/* 押印 */
-.stamp-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
-.stamp-item {
-  display: flex; align-items: center; gap: 10px;
-  background: var(--surface); border: 1px solid var(--line); border-radius: 6px;
-  padding: 6px 10px; cursor: pointer;
-}
-.stamp-item.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-.stamp-item input { accent-color: var(--accent); }
-.thumb {
-  flex: 0 0 auto; width: 52px; height: 52px;
-  background: var(--paper); border: 1px solid var(--line); border-radius: 4px;
-  display: flex; align-items: center; justify-content: center; padding: 3px;
-}
-.thumb svg { width: 100%; height: 100%; }
-.sname { font-weight: 700; }
-
-.opt { display: flex; align-items: center; gap: 6px; margin: 8px 0; }
-.opt input { accent-color: var(--accent); }
-
+/* ---- 共通部品 ---- */
 button {
   font-family: inherit; font-size: 12px;
   background: var(--surface); color: var(--ink);
@@ -84,11 +97,60 @@ button.primary {
 button.primary:hover { background: var(--accent-dark); color: #FFFDF9; }
 button.primary:disabled { opacity: 0.5; cursor: default; }
 button.danger:hover { border-color: #A11A00; color: #A11A00; }
+button.mini { font-size: 10.5px; padding: 2px 8px; }
 
 .hint { font-size: 10.5px; color: var(--muted); margin-top: 10px; }
+.tool-lead { font-size: 12px; margin: 4px 0 10px; }
+.empty { color: var(--muted); font-size: 12px; }
+.opt { display: flex; align-items: center; gap: 6px; margin: 8px 0; }
+.opt input { accent-color: var(--accent); }
+.btn-row { display: flex; gap: 6px; margin: 8px 0; flex-wrap: wrap; }
+.save-row { display: flex; gap: 6px; align-items: center; margin: 10px 0 0; }
+.save-row input[type="text"] { flex: 1; }
+.save-row input[type="date"], .save-row input[type="number"] {
+  font-family: inherit; font-size: 12px; padding: 4px 6px;
+  border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--ink);
+}
+.save-row input[type="number"] { width: 70px; }
+
+fieldset {
+  border: 1px solid var(--line); border-radius: 6px;
+  background: var(--surface); margin: 10px 0; padding: 8px 12px 10px;
+}
+legend { font-size: 11px; font-weight: 700; color: var(--accent-dark); padding: 0 4px; }
+form label, fieldset label, .panel > label:not(.opt) { display: block; font-size: 11px; color: var(--muted); margin: 6px 0 2px; }
+input[type="text"], input[type="number"], select, textarea {
+  display: block; width: 100%; font-family: inherit; font-size: 12px;
+  padding: 4px 6px; border: 1px solid var(--line); border-radius: 4px;
+  background: var(--bg); color: var(--ink); margin-top: 2px;
+}
+textarea { resize: vertical; }
+input[type="color"] { width: 100%; height: 28px; padding: 1px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); }
+input[type="range"] { width: 100%; accent-color: var(--accent); margin-top: 8px; }
+input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; }
+.save-row input, .btn-row button { margin-top: 0; }
+.save-row input[type="date"], .save-row input[type="number"] { width: auto; display: inline-block; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px; }
+
+/* ---- デート印: 押印 ---- */
+.stamp-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.stamp-item {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 6px;
+  padding: 6px 10px; cursor: pointer;
+}
+.stamp-item.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.stamp-item input { accent-color: var(--accent); }
+.thumb {
+  flex: 0 0 auto; width: 52px; height: 52px;
+  background: var(--paper); border: 1px solid var(--line); border-radius: 4px;
+  display: flex; align-items: center; justify-content: center; padding: 3px;
+}
+.thumb svg { width: 100%; height: 100%; }
+.sname { font-weight: 700; }
 .verify-btn { width: 100%; margin-top: 6px; }
 
-/* デザイナ */
+/* ---- デート印: デザイナ ---- */
 .preview-wrap { text-align: center; margin-bottom: 12px; }
 .paper {
   display: inline-flex; align-items: center; justify-content: center;
@@ -103,35 +165,12 @@ button.danger:hover { border-color: #A11A00; color: #A11A00; }
 }
 .preview-btns { display: flex; gap: 6px; justify-content: center; }
 .preview-btns .primary { width: auto; padding: 5px 18px; }
-
-fieldset {
-  border: 1px solid var(--line); border-radius: 6px;
-  background: var(--surface); margin: 0 0 10px; padding: 8px 12px 10px;
-}
-legend { font-size: 11px; font-weight: 700; color: var(--accent-dark); padding: 0 4px; }
-form label { display: block; font-size: 11px; color: var(--muted); margin: 6px 0 2px; }
-form textarea {
-  display: block; width: 100%; font-family: inherit; font-size: 12px;
-  padding: 4px 6px; border: 1px solid var(--line); border-radius: 4px;
-  background: var(--bg); color: var(--ink); margin-top: 2px; resize: vertical;
-}
 .line-scales { margin: 2px 0 4px; }
-.line-scale {
-  display: grid; grid-template-columns: 1fr 90px; align-items: center; gap: 8px;
-}
+.line-scale { display: grid; grid-template-columns: 1fr 90px; align-items: center; gap: 8px; }
 .line-scale span { font-size: 10.5px; color: var(--muted); }
 .line-scale input[type="range"] { margin-top: 0; }
-form input[type="text"], form input[type="number"], form select {
-  display: block; width: 100%; font-family: inherit; font-size: 12px;
-  padding: 4px 6px; border: 1px solid var(--line); border-radius: 4px;
-  background: var(--bg); color: var(--ink); margin-top: 2px;
-}
-form input[type="color"] { width: 100%; height: 28px; padding: 1px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); }
-form input[type="range"] { width: 100%; accent-color: var(--accent); margin-top: 8px; }
-form input:focus-visible, form select:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; }
-.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px; }
 
-/* ライブラリ */
+/* ---- リスト(ライブラリ・定型文) ---- */
 .lib-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
 .lib-item {
   display: flex; gap: 10px; align-items: flex-start;
@@ -139,9 +178,53 @@ form input:focus-visible, form select:focus-visible { outline: 2px solid var(--a
 }
 .lib-main { flex: 1; min-width: 0; }
 .smeta { font-size: 10px; color: var(--muted); font-family: Consolas, monospace; }
+.snip-preview { font-size: 11px; color: var(--muted); white-space: pre-wrap; }
 .lib-btns { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
 .lib-btns button { font-size: 11px; padding: 3px 8px; }
 .import-label { display: block; font-size: 11px; color: var(--muted); }
 .import-label input { display: block; margin-top: 4px; font-size: 11px; }
 
-.empty { color: var(--muted); font-size: 12px; }
+/* ---- 差分比較 ---- */
+.diff-list { display: flex; flex-direction: column; gap: 3px; max-height: 340px; overflow-y: auto; }
+.diff-row {
+  display: flex; gap: 8px; align-items: baseline; text-align: left;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 4px;
+  padding: 4px 8px; font-size: 11px; cursor: pointer; width: 100%;
+}
+.diff-row:hover { border-color: var(--accent); }
+.diff-addr {
+  flex: 0 0 auto; font-family: Consolas, monospace; font-weight: 700;
+  color: var(--accent-dark); min-width: 42px;
+}
+.diff-vals { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---- 定型書式 ---- */
+.chip-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 4px; }
+.chip-wrap { display: inline-flex; align-items: center; }
+.chip {
+  border: 1px solid var(--line); border-radius: 20px;
+  background: var(--surface); padding: 3px 12px; font-size: 11px;
+}
+.chip:hover { border-color: var(--accent); color: var(--accent-dark); }
+.chip-del {
+  border: none; background: none; color: var(--muted);
+  font-size: 12px; padding: 0 4px; cursor: pointer;
+}
+.chip-del:hover { color: #A11A00; }
+
+/* ---- ブック掃除・日付ツール ---- */
+.clean-h {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; margin: 16px 0 6px;
+}
+.clean-h .count { color: var(--muted); font-weight: 400; font-size: 11px; }
+.clean-list { display: flex; flex-direction: column; gap: 3px; }
+.clean-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 4px;
+  padding: 4px 8px; font-size: 11.5px;
+}
+.clean-row button { flex: 0 0 auto; font-size: 10.5px; padding: 2px 8px; }
+.clean-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; display: flex; flex-direction: column; }
+.dt-label { font-size: 9.5px; color: var(--muted); }
+.dt-text { font-size: 12px; }

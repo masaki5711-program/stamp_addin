@@ -1,28 +1,23 @@
 /**
- * app.js — タスクペインUI(押印 / デザイナ / ライブラリ)
+ * app.js — ツール①: デート印(押印 / デザイナ / ライブラリ)
  */
 (function () {
   "use strict";
 
   var editing = Stamp.defaultDef(); // デザイナで編集中の定義
   var selectedId = null;            // 押印タブで選択中の印ID
+  var previewGen = 0;
 
   var $ = function (id) { return document.getElementById(id); };
-
-  function status(msg, isError) {
-    var el = $("status");
-    el.textContent = msg;
-    el.className = "status" + (isError ? " error" : "");
-    if (msg) setTimeout(function () { if (el.textContent === msg) el.textContent = ""; }, 6000);
-  }
+  var status = function (m, e) { UI.status(m, e); };
 
   /* ---- タブ ---- */
 
   function showTab(name) {
-    document.querySelectorAll(".tab").forEach(function (b) {
+    document.querySelectorAll("#view-stamp .tab").forEach(function (b) {
       b.classList.toggle("active", b.dataset.tab === name);
     });
-    document.querySelectorAll(".panel").forEach(function (p) {
+    document.querySelectorAll("#view-stamp .panel").forEach(function (p) {
       p.hidden = p.id !== "panel-" + name;
     });
     if (name === "stamp") renderStampList();
@@ -113,7 +108,7 @@
     return Array.from(sliders).map(function (inp) { return parseFloat(inp.value) || 1; });
   }
 
-  var previewGen = 0;
+  /* ---- デザイナ: 操作 ---- */
 
   function renderPreview() {
     var gen = ++previewGen;
@@ -132,10 +127,7 @@
       : "(未生成 — 保存時に欠けを自動生成します)";
   }
 
-  /* ---- デザイナ: 操作 ---- */
-
   function onDesignerInput(ev) {
-    // テキストの行数が変わったらスライダーを作り直す(スライダー操作中は再構築しない)
     if (ev && ev.target) {
       if (ev.target.id === "f-r0-text") syncLineScales(0);
       if (ev.target.id === "f-r2-text") syncLineScales(2);
@@ -218,13 +210,12 @@
           stampedAt: now.toISOString(),
           vcode: r.code
         };
-        var png = r.png;
         if (XL.isOffice()) {
-          return XL.insertStamp(png, def.frame.diameterMm, meta).then(function () {
+          return XL.insertStamp(r.png, def.frame.diameterMm, meta).then(function () {
             status("押印しました(" + meta.date + ")");
           });
         }
-        XL.downloadPNG(png, def.name + "_" + now.toISOString().slice(0, 10) + ".png");
+        XL.downloadPNG(r.png, def.name + "_" + now.toISOString().slice(0, 10) + ".png");
         status("ブラウザモードのためPNGをダウンロードしました");
       })
       .catch(function (e) { status("押印に失敗しました: " + e.message, true); })
@@ -349,8 +340,7 @@
 
   /* ---- 初期化 ---- */
 
-  function init() {
-    // 日付書式の選択肢
+  function init(host) {
     var sel = $("f-r1-format");
     Object.keys(Stamp.DATE_FORMATS).forEach(function (k) {
       var o = document.createElement("option");
@@ -358,7 +348,6 @@
       o.textContent = Stamp.DATE_FORMATS[k].label;
       sel.appendChild(o);
     });
-    // 印色プリセット
     var inkSel = $("f-ink-preset");
     Object.keys(Stamp.INK_PRESETS).forEach(function (k) {
       var o = document.createElement("option");
@@ -371,7 +360,7 @@
       onDesignerInput();
     });
 
-    document.querySelectorAll(".tab").forEach(function (b) {
+    document.querySelectorAll("#view-stamp .tab").forEach(function (b) {
       b.addEventListener("click", function () { showTab(b.dataset.tab); });
     });
     $("designer-form").addEventListener("input", onDesignerInput);
@@ -385,28 +374,23 @@
       this.value = "";
     });
 
+    if (host === "excel") $("btn-stamp").textContent = "選択セルに押印";
+    else if (host === "word") $("btn-stamp").textContent = "カーソル位置に押印";
+    else {
+      $("btn-stamp").textContent = "押印(PNGをダウンロード)";
+      $("btn-verify").hidden = true;
+    }
+
     fillForm(editing);
     renderPreview();
     showTab("stamp");
-
-    XL.init().then(function (host) {
-      if (host === "excel") {
-        $("host-mode").textContent = "Excel に接続中";
-        $("btn-stamp").textContent = "選択セルに押印";
-      } else if (host === "word") {
-        $("host-mode").textContent = "Word に接続中";
-        $("btn-stamp").textContent = "カーソル位置に押印";
-      } else {
-        $("host-mode").textContent = "ブラウザモード(押印はPNGダウンロード)";
-        $("btn-stamp").textContent = "押印(PNGをダウンロード)";
-        $("btn-verify").hidden = true;
-      }
-    });
   }
 
-  if (window.Office && Office.onReady) {
-    Office.onReady().then(init);
-  } else {
-    document.addEventListener("DOMContentLoaded", init);
-  }
+  UI.registerTool({
+    id: "stamp",
+    name: "デート印",
+    desc: "日付が自動で入る電子日付印を作成・押印",
+    hosts: ["excel", "word", "browser"],
+    init: init
+  });
 })();

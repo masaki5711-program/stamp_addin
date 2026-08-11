@@ -3,133 +3,268 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>便利アドインセット — デート印</title>
+  <title>便利アドインセット</title>
   <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
   <link rel="stylesheet" href="css/taskpane.css">
 </head>
 <body>
   <header class="app-header">
-    <div class="app-title">便利アドインセット</div>
-    <div class="tool-title">デート印生成 <span class="ver">prototype</span></div>
+    <div class="head-row">
+      <button id="btn-back" class="back-btn" type="button" hidden aria-label="ホームに戻る">←</button>
+      <div class="head-titles">
+        <div class="app-title">便利アドインセット</div>
+        <div class="tool-title" id="shell-title">ホーム</div>
+      </div>
+    </div>
     <div class="host-mode" id="host-mode">起動中…</div>
   </header>
 
-  <nav class="tabs" role="tablist">
-    <button class="tab" data-tab="stamp" type="button">押印</button>
-    <button class="tab" data-tab="designer" type="button">デザイナ</button>
-    <button class="tab" data-tab="library" type="button">ライブラリ</button>
-  </nav>
-
   <div id="status" class="status" role="status"></div>
 
-  <!-- 押印 -->
-  <section class="panel" id="panel-stamp" hidden>
-    <div id="stamp-list" class="stamp-list"></div>
-    <label class="opt"><input type="checkbox" id="opt-random-tilt" checked> 押印時にわずかにランダムで傾ける</label>
-    <button class="primary" id="btn-stamp" type="button">押印</button>
-    <button id="btn-verify" type="button" class="verify-btn">この文書の押印を検証</button>
-    <p class="hint">日付は押印時に自動取得されます。Excelでは選択セルの中央、Wordではカーソル位置に押印されます。印面には拡大しないと見えない検証コード(マイクロ文字)が入り、日付や名前を改変した偽造は「検証」で見破れます。</p>
+  <!-- ホーム -->
+  <section class="panel" id="view-home">
+    <div id="home-grid" class="home-grid"></div>
+    <p class="hint">ツールは今後も追加予定です。困りごと・要望があれば管理者まで。</p>
   </section>
 
-  <!-- デザイナ -->
-  <section class="panel" id="panel-designer" hidden>
-    <div class="preview-wrap">
-      <div class="paper" id="preview"></div>
-      <div class="seedline">seed: <span id="seed-text"></span></div>
-      <div class="preview-btns">
-        <button id="btn-reseed" type="button">欠けを再抽選</button>
-        <button id="btn-new" type="button">新規</button>
-        <button class="primary" id="btn-save" type="button">保存</button>
+  <!-- ① デート印 -->
+  <section class="tool-view" id="view-stamp" hidden>
+    <nav class="tabs" role="tablist">
+      <button class="tab" data-tab="stamp" type="button">押印</button>
+      <button class="tab" data-tab="designer" type="button">デザイナ</button>
+      <button class="tab" data-tab="library" type="button">ライブラリ</button>
+    </nav>
+
+    <section class="panel" id="panel-stamp" hidden>
+      <div id="stamp-list" class="stamp-list"></div>
+      <label class="opt"><input type="checkbox" id="opt-random-tilt" checked> 押印時にわずかにランダムで傾ける</label>
+      <button class="primary" id="btn-stamp" type="button">押印</button>
+      <button id="btn-verify" type="button" class="verify-btn">この文書の押印を検証</button>
+      <p class="hint">日付は押印時に自動取得されます。Excelでは選択セルの中央、Wordではカーソル位置に押印されます。印面には拡大しないと見えない検証コード(マイクロ文字)が入り、日付や名前を改変した偽造は「検証」で見破れます。</p>
+    </section>
+
+    <section class="panel" id="panel-designer" hidden>
+      <div class="preview-wrap">
+        <div class="paper" id="preview"></div>
+        <div class="seedline">seed: <span id="seed-text"></span></div>
+        <div class="preview-btns">
+          <button id="btn-reseed" type="button">欠けを再抽選</button>
+          <button id="btn-new" type="button">新規</button>
+          <button class="primary" id="btn-save" type="button">保存</button>
+        </div>
+      </div>
+
+      <form id="designer-form" onsubmit="return false">
+        <fieldset>
+          <legend>基本</legend>
+          <label>印の名前 <input type="text" id="f-name" placeholder="例: 営業部 藤川"></label>
+          <div class="grid2">
+            <label>外径(mm) <input type="number" id="f-diameter" min="8" max="30" step="0.5" value="12"></label>
+            <label>線幅(mm) <input type="number" id="f-stroke" min="0.2" max="1.2" step="0.05" value="0.35"></label>
+          </div>
+          <div class="grid2">
+            <label>印色プリセット
+              <select id="f-ink-preset"></select>
+            </label>
+            <label>印色 <input type="color" id="f-ink" value="#C13B2A"></label>
+          </div>
+          <div class="grid2">
+            <label class="opt"><input type="checkbox" id="f-dividers" checked> 段区切り線</label>
+            <label>押印時傾き(±°) <input type="number" id="f-tilt-on-stamp" min="0" max="5" step="0.5" value="3"></label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>上段</legend>
+          <label class="opt"><input type="checkbox" id="f-r0-enabled" checked> 使用する</label>
+          <label>テキスト(改行で複数行) <textarea id="f-r0-text" rows="2">営業部</textarea></label>
+          <div id="f-r0-lines" class="line-scales"></div>
+          <div class="grid2">
+            <label>書体
+              <select id="f-r0-font"><option value="mincho">明朝系</option><option value="gothic">ゴシック系</option></select>
+            </label>
+            <label>傾き(°) <input type="number" id="f-r0-tilt" min="-30" max="30" step="1" value="0"></label>
+          </div>
+          <div class="grid2">
+            <label>大きさ <input type="range" id="f-r0-ratio" min="0.15" max="0.5" step="0.01" value="0.28"></label>
+            <label>字間 <input type="range" id="f-r0-spacing" min="0" max="0.5" step="0.01" value="0.08"></label>
+          </div>
+          <label class="opt"><input type="checkbox" id="f-r0-bold"> 太字</label>
+        </fieldset>
+
+        <fieldset>
+          <legend>中段(日付)</legend>
+          <label>日付書式 <select id="f-r1-format"></select></label>
+          <div class="grid2">
+            <label>書体
+              <select id="f-r1-font"><option value="gothic">ゴシック系</option><option value="mincho">明朝系</option></select>
+            </label>
+            <label>傾き(°) <input type="number" id="f-r1-tilt" min="-30" max="30" step="1" value="0"></label>
+          </div>
+          <div class="grid2">
+            <label>大きさ <input type="range" id="f-r1-ratio" min="0.15" max="0.5" step="0.01" value="0.34"></label>
+            <label>字間 <input type="range" id="f-r1-spacing" min="0" max="0.5" step="0.01" value="0"></label>
+          </div>
+          <label class="opt"><input type="checkbox" id="f-r1-bold" checked> 太字</label>
+        </fieldset>
+
+        <fieldset>
+          <legend>下段</legend>
+          <label class="opt"><input type="checkbox" id="f-r2-enabled" checked> 使用する</label>
+          <label>テキスト(改行で複数行) <textarea id="f-r2-text" rows="2">藤川</textarea></label>
+          <div id="f-r2-lines" class="line-scales"></div>
+          <div class="grid2">
+            <label>書体
+              <select id="f-r2-font"><option value="mincho">明朝系</option><option value="gothic">ゴシック系</option></select>
+            </label>
+            <label>傾き(°) <input type="number" id="f-r2-tilt" min="-30" max="30" step="1" value="0"></label>
+          </div>
+          <div class="grid2">
+            <label>大きさ <input type="range" id="f-r2-ratio" min="0.15" max="0.5" step="0.01" value="0.28"></label>
+            <label>字間 <input type="range" id="f-r2-spacing" min="0" max="0.5" step="0.01" value="0.15"></label>
+          </div>
+          <label class="opt"><input type="checkbox" id="f-r2-bold"> 太字</label>
+        </fieldset>
+      </form>
+      <p class="hint">「保存」時に欠けシードが確定し、以後は常に同じ印影になります。文言や色を編集しても欠けは維持されます。</p>
+    </section>
+
+    <section class="panel" id="panel-library" hidden>
+      <div id="lib-list" class="lib-list"></div>
+      <label class="import-label">印定義(JSON)を取り込む
+        <input type="file" id="f-import" accept=".json,application/json">
+      </label>
+      <p class="hint">⚠ 書き出したJSONを他人に渡すと、欠けを含め完全な複製が作れます。自分だけの印として使う場合は共有しないでください。</p>
+    </section>
+  </section>
+
+  <!-- ② お作法リセット -->
+  <section class="tool-view" id="view-reset" hidden>
+    <div class="panel">
+      <p class="tool-lead">納品・共有の前に、全シートの見た目を整えます。</p>
+      <label class="opt"><input type="checkbox" id="chk-reset-unfreeze"> ウィンドウ枠の固定も解除する</label>
+      <label class="opt"><input type="checkbox" id="chk-reset-first" checked> 実行後に先頭シートを表示する</label>
+      <label class="opt"><input type="checkbox" id="chk-reset-save"> 実行後に上書き保存する</label>
+      <button class="primary" id="btn-reset-run" type="button">全シートをA1に整える</button>
+      <p class="hint">各シートの選択セルをA1に戻します(非表示シートは対象外)。※表示倍率(ズーム)はアドインAPIでは操作できないため対象外です。</p>
+    </div>
+  </section>
+
+  <!-- ③ シート差分比較 -->
+  <section class="tool-view" id="view-diff" hidden>
+    <div class="panel">
+      <div class="grid2">
+        <label>比較元(A) <select id="diff-a"></select></label>
+        <label>比較先(B) <select id="diff-b"></select></label>
+      </div>
+      <div class="btn-row">
+        <button id="btn-diff-refresh" type="button">シート一覧を更新</button>
+        <button id="btn-diff-clear" type="button" hidden>色付けを解除</button>
+      </div>
+      <label class="opt"><input type="checkbox" id="chk-diff-highlight" checked> 差分セルを比較先(B)で色付けする</label>
+      <button class="primary" id="btn-diff-run" type="button">比較する</button>
+      <p id="diff-summary" class="tool-lead"></p>
+      <div id="diff-list" class="diff-list"></div>
+    </div>
+  </section>
+
+  <!-- ④ 定型書式 -->
+  <section class="tool-view" id="view-format" hidden>
+    <div class="panel">
+      <p class="tool-lead">表にしたい範囲を選択してから「適用」を押してください。</p>
+      <div class="chip-row" id="fmt-presets"></div>
+      <fieldset>
+        <legend>設定</legend>
+        <label class="opt"><input type="checkbox" id="chk-fmt-header" checked> 先頭行を見出しにする</label>
+        <div class="grid2">
+          <label>見出しの背景 <input type="color" id="fmt-header-fill" value="#EDEAE3"></label>
+          <label>見出しの文字色 <input type="color" id="fmt-header-font" value="#2A2622"></label>
+        </div>
+        <label class="opt"><input type="checkbox" id="chk-fmt-band" checked> 1行おきに色を付ける(縞)</label>
+        <label>縞の色 <input type="color" id="fmt-band-fill" value="#F7F5F0"></label>
+        <div class="grid2">
+          <label>罫線
+            <select id="fmt-border">
+              <option value="thin">細線</option>
+              <option value="medium">中太線</option>
+              <option value="none">なし</option>
+            </select>
+          </label>
+          <label class="opt"><input type="checkbox" id="chk-fmt-autofit" checked> 列幅を自動調整</label>
+        </div>
+      </fieldset>
+      <button class="primary" id="btn-fmt-apply" type="button">選択範囲に適用</button>
+      <div class="save-row">
+        <input type="text" id="fmt-preset-name" placeholder="この設定に名前を付けて保存">
+        <button id="btn-fmt-save" type="button">保存</button>
       </div>
     </div>
-
-    <form id="designer-form" onsubmit="return false">
-      <fieldset>
-        <legend>基本</legend>
-        <label>印の名前 <input type="text" id="f-name" placeholder="例: 営業部 藤川"></label>
-        <div class="grid2">
-          <label>外径(mm) <input type="number" id="f-diameter" min="8" max="30" step="0.5" value="12"></label>
-          <label>線幅(mm) <input type="number" id="f-stroke" min="0.2" max="1.2" step="0.05" value="0.35"></label>
-        </div>
-        <div class="grid2">
-          <label>印色プリセット
-            <select id="f-ink-preset"></select>
-          </label>
-          <label>印色 <input type="color" id="f-ink" value="#C13B2A"></label>
-        </div>
-        <div class="grid2">
-          <label class="opt"><input type="checkbox" id="f-dividers" checked> 段区切り線</label>
-          <label>押印時傾き(±°) <input type="number" id="f-tilt-on-stamp" min="0" max="5" step="0.5" value="3"></label>
-        </div>
-      </fieldset>
-
-      <fieldset>
-        <legend>上段</legend>
-        <label class="opt"><input type="checkbox" id="f-r0-enabled" checked> 使用する</label>
-        <label>テキスト(改行で複数行) <textarea id="f-r0-text" rows="2">営業部</textarea></label>
-        <div id="f-r0-lines" class="line-scales"></div>
-        <div class="grid2">
-          <label>書体
-            <select id="f-r0-font"><option value="mincho">明朝系</option><option value="gothic">ゴシック系</option></select>
-          </label>
-          <label>傾き(°) <input type="number" id="f-r0-tilt" min="-30" max="30" step="1" value="0"></label>
-        </div>
-        <div class="grid2">
-          <label>大きさ <input type="range" id="f-r0-ratio" min="0.15" max="0.5" step="0.01" value="0.28"></label>
-          <label>字間 <input type="range" id="f-r0-spacing" min="0" max="0.5" step="0.01" value="0.08"></label>
-        </div>
-        <label class="opt"><input type="checkbox" id="f-r0-bold"> 太字</label>
-      </fieldset>
-
-      <fieldset>
-        <legend>中段(日付)</legend>
-        <label>日付書式 <select id="f-r1-format"></select></label>
-        <div class="grid2">
-          <label>書体
-            <select id="f-r1-font"><option value="gothic">ゴシック系</option><option value="mincho">明朝系</option></select>
-          </label>
-          <label>傾き(°) <input type="number" id="f-r1-tilt" min="-30" max="30" step="1" value="0"></label>
-        </div>
-        <div class="grid2">
-          <label>大きさ <input type="range" id="f-r1-ratio" min="0.15" max="0.5" step="0.01" value="0.34"></label>
-          <label>字間 <input type="range" id="f-r1-spacing" min="0" max="0.5" step="0.01" value="0"></label>
-        </div>
-        <label class="opt"><input type="checkbox" id="f-r1-bold" checked> 太字</label>
-      </fieldset>
-
-      <fieldset>
-        <legend>下段</legend>
-        <label class="opt"><input type="checkbox" id="f-r2-enabled" checked> 使用する</label>
-        <label>テキスト(改行で複数行) <textarea id="f-r2-text" rows="2">藤川</textarea></label>
-        <div id="f-r2-lines" class="line-scales"></div>
-        <div class="grid2">
-          <label>書体
-            <select id="f-r2-font"><option value="mincho">明朝系</option><option value="gothic">ゴシック系</option></select>
-          </label>
-          <label>傾き(°) <input type="number" id="f-r2-tilt" min="-30" max="30" step="1" value="0"></label>
-        </div>
-        <div class="grid2">
-          <label>大きさ <input type="range" id="f-r2-ratio" min="0.15" max="0.5" step="0.01" value="0.28"></label>
-          <label>字間 <input type="range" id="f-r2-spacing" min="0" max="0.5" step="0.01" value="0.15"></label>
-        </div>
-        <label class="opt"><input type="checkbox" id="f-r2-bold"> 太字</label>
-      </fieldset>
-    </form>
-    <p class="hint">「保存」時に欠けシードが確定し、以後は常に同じ印影になります。文言や色を編集しても欠けは維持されます。</p>
   </section>
 
-  <!-- ライブラリ -->
-  <section class="panel" id="panel-library" hidden>
-    <div id="lib-list" class="lib-list"></div>
-    <label class="import-label">印定義(JSON)を取り込む
-      <input type="file" id="f-import" accept=".json,application/json">
-    </label>
-    <p class="hint">⚠ 書き出したJSONを他人に渡すと、欠けを含め完全な複製が作れます。自分だけの印として使う場合は共有しないでください。</p>
+  <!-- ⑤ 定型文 -->
+  <section class="tool-view" id="view-snippets" hidden>
+    <div class="panel">
+      <div id="snippet-list" class="lib-list"></div>
+      <fieldset>
+        <legend>文例の追加・編集</legend>
+        <label>タイトル <input type="text" id="snip-title" placeholder="例: 確認依頼"></label>
+        <label>本文 <textarea id="snip-text" rows="4" placeholder="挿入したい文章"></textarea></label>
+        <div class="btn-row">
+          <button class="primary" id="btn-snip-save" type="button">追加</button>
+          <button id="btn-snip-new" type="button">新規</button>
+        </div>
+      </fieldset>
+      <p class="hint">「挿入」で、Excelは選択セル、Wordはカーソル位置に入ります。</p>
+    </div>
+  </section>
+
+  <!-- ⑥ ブック掃除 -->
+  <section class="tool-view" id="view-cleanup" hidden>
+    <div class="panel">
+      <button class="primary" id="btn-clean-scan" type="button">このブックをスキャン</button>
+      <h3 class="clean-h">名前定義 <span id="clean-names-count" class="count"></span>
+        <button id="btn-clean-names" type="button" class="danger mini">全削除</button></h3>
+      <div id="clean-names" class="clean-list"><p class="empty">スキャンすると表示されます。</p></div>
+      <h3 class="clean-h">非表示シート <span id="clean-sheets-count" class="count"></span></h3>
+      <div id="clean-sheets" class="clean-list"><p class="empty">スキャンすると表示されます。</p></div>
+      <h3 class="clean-h">カスタムスタイル <span id="clean-styles-count" class="count"></span>
+        <button id="btn-clean-styles" type="button" class="danger mini" hidden>全削除</button></h3>
+      <div id="clean-styles" class="clean-list"><p class="empty">スキャンすると表示されます。</p></div>
+      <p class="hint">削除は元に戻せません。実行前にブックのバックアップをおすすめします。</p>
+    </div>
+  </section>
+
+  <!-- ⑦ 日付ツール -->
+  <section class="tool-view" id="view-datetool" hidden>
+    <div class="panel">
+      <div class="save-row">
+        <input type="date" id="dt-date">
+        <button id="btn-dt-today" type="button">今日</button>
+      </div>
+      <div id="dt-formats" class="clean-list"></div>
+      <fieldset>
+        <legend>営業日計算(土日を除く)</legend>
+        <div class="save-row">
+          <input type="number" id="dt-biz-n" value="5" step="1"> 営業日後
+          <button id="btn-dt-biz-calc" type="button">計算</button>
+        </div>
+        <p class="tool-lead" id="dt-biz-result"></p>
+        <button id="btn-dt-biz-insert" type="button" hidden>この日付を挿入</button>
+      </fieldset>
+      <p class="hint">祝日は考慮しません(将来対応予定)。マイナスの営業日でさかのぼりも可能です。</p>
+    </div>
   </section>
 
   <script src="js/stamp.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/excel.js"></script>
+  <script src="js/shell.js"></script>
   <script src="js/app.js"></script>
+  <script src="js/tools/reset.js"></script>
+  <script src="js/tools/diff.js"></script>
+  <script src="js/tools/format.js"></script>
+  <script src="js/tools/snippets.js"></script>
+  <script src="js/tools/cleanup.js"></script>
+  <script src="js/tools/datetool.js"></script>
 </body>
 </html>

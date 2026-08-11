@@ -48,5 +48,24 @@
     return def;
   }
 
-  global.Store = { list: list, get: get, save: save, remove: remove, exportJSON: exportJSON, importJSON: importJSON };
+  /* 汎用キー保存(他ツールのプリセット・文例など) */
+
+  function readKey(key, fallback) {
+    try {
+      var v = localStorage.getItem("stampset." + key);
+      return v === null ? fallback : JSON.parse(v);
+    } catch (e) {
+      return fallback;
+    }
+  }
+
+  function writeKey(key, value) {
+    localStorage.setItem("stampset." + key, JSON.stringify(value));
+  }
+
+  global.Store = {
+    list: list, get: get, save: save, remove: remove,
+    exportJSON: exportJSON, importJSON: importJSON,
+    readKey: readKey, writeKey: writeKey
+  };
 })(window);
