@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>デート印アドイン — ダウンロード</title>
+  <style>
+    :root {
+      --bg: #FAF9F6; --surface: #FFFFFF; --ink: #2A2622; --muted: #6E675E;
+      --line: #E5E1D8; --accent: #C13B2A; --accent-dark: #A93223; --paper: #FDFCF8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--ink);
+      font-family: "Yu Gothic UI", "Yu Gothic", "Hiragino Sans", "Meiryo", sans-serif;
+      font-size: 15px; line-height: 1.85;
+    }
+    .page { max-width: 44rem; margin: 0 auto; padding: 2.5rem 1.25rem 4rem; }
+    h1 {
+      font-family: "Yu Mincho", "YuMincho", "Hiragino Mincho ProN", serif;
+      font-size: 1.7rem; margin: 0.3rem 0 0.2rem; border-bottom: 2px solid var(--accent);
+      padding-bottom: 0.5rem;
+    }
+    h2 { font-size: 1.1rem; margin: 2.2rem 0 0.6rem; color: var(--accent-dark); }
+    .eyebrow { color: var(--muted); font-size: 0.8rem; letter-spacing: 0.2em; }
+    .dl-box {
+      background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+      padding: 1.4rem; margin: 1.6rem 0; text-align: center;
+    }
+    a.dl-btn {
+      display: inline-block; background: var(--accent); color: #FFFDF9;
+      font-weight: 700; font-size: 1.05rem; text-decoration: none;
+      padding: 0.7em 2.2em; border-radius: 6px; margin: 0.4rem 0;
+    }
+    a.dl-btn:hover { background: var(--accent-dark); }
+    .dl-note { font-size: 0.82rem; color: var(--muted); margin-top: 0.5rem; }
+    ol, ul { padding-left: 1.5em; }
+    li { margin: 0.3rem 0; }
+    .callout {
+      border-left: 3px solid var(--accent-dark); background: #F7E8E4;
+      border-radius: 0 6px 6px 0; padding: 0.7rem 1rem; font-size: 0.9rem; margin: 1rem 0;
+    }
+    table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+    th, td { text-align: left; padding: 0.45em 0.7em; border-bottom: 1px solid var(--line); }
+    th { color: var(--muted); font-size: 0.8rem; white-space: nowrap; }
+    code {
+      font-family: Consolas, monospace; font-size: 0.85em;
+      background: #F3F1EB; padding: 0.1em 0.35em; border-radius: 3px;
+    }
+    footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.8rem; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="eyebrow">便利アドインセット</div>
+    <h1>デート印アドイン ダウンロード</h1>
+    <p>Excel・Word で使える電子日付印です。自分だけの印を作って保存し、ワンクリックで押印できます。日付は押した日の日付が自動で入ります。</p>
+
+    <div class="dl-box">
+      <a class="dl-btn" href="./stampset-setup.zip">stampset-setup.zip をダウンロード</a>
+      <div class="dl-note">Windows用インストーラー(管理者権限不要)</div>
+    </div>
+
+    <h2>インストール手順(Windows)</h2>
+    <ol>
+      <li>ダウンロードした zip を展開(解凍)する</li>
+      <li><code>install.cmd</code> をダブルクリックする<br>
+        (「WindowsによってPCが保護されました」と出たら「詳細情報」→「実行」)</li>
+      <li>Excel / Word を再起動する</li>
+      <li>ホームタブの右端に「デート印」ボタンが表示されます</li>
+    </ol>
+
+    <h2>動作要件</h2>
+    <table>
+      <tr><th>OS</th><td>Windows(インストーラー使用時)</td></tr>
+      <tr><th>Office</th><td>Microsoft 365 版の Excel / Word(買い切り版 2016/2019/2021 は対象外)</td></tr>
+      <tr><th>ネットワーク</th><td>このサーバーおよび appsforoffice.microsoft.com への接続</td></tr>
+    </table>
+
+    <h2>Mac・ブラウザ版(Office on the web)の方</h2>
+    <p>インストーラーの代わりに <a href="./manifest.prod.xml" download>manifest.prod.xml</a> をダウンロードし、
+      Excel / Word(Web版)の「挿入」→「アドイン」→「自分のアドイン」→「マニフェストをアップロード」から登録してください。</p>
+
+    <h2>使い方</h2>
+    <ol>
+      <li>リボンの「デート印」ボタンでタスクペインを開く</li>
+      <li>「デザイナ」タブで印を作成して保存(枠・段ごとの文字・太字・傾き・色などを調整。保存時にその印固有の「欠け」が生成されます)</li>
+      <li>Excelはセルを選択、Wordはカーソルを置いて、「押印」タブから押印</li>
+    </ol>
+
+    <h2>アンインストール</h2>
+    <p>zip内の <code>uninstall.cmd</code> をダブルクリックして Excel / Word を再起動してください。</p>
+
+    <div class="callout">
+      <strong>ご注意</strong> — 印影の「欠け」は個体識別の演出であり、偽造防止機能ではありません(画像はコピーできます)。
+      電子印影そのものに法的効力はありません。正式な承認記録が必要な業務では、社内の規定に従ってください。
+    </div>
+
+    <footer>便利アドインセット — デート印生成 / 動作確認用タスクペイン: <a href="./taskpane.html">taskpane.html</a></footer>
+  </div>
+</body>
+</html>

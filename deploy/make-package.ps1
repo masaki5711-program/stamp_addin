@@ -25,11 +25,19 @@ Copy-Item $manifestPath (Join-Path $deploy "installer\manifest.prod.xml") -Force
 $zipPath = Join-Path $deploy "stampset-setup.zip"
 if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
 Compress-Archive -Path (Join-Path $deploy "installer\*") -DestinationPath $zipPath
-Write-Host "作成: $zipPath"
+Write-Host "作成: $zipPath(利用者に配るインストーラー)"
+
+# 3. サーバー配置用一式(アドイン本体 + ダウンロードページ + インストーラーzip + マニフェスト)
+$src = Join-Path (Split-Path $deploy -Parent) "src"
+$siteZip = Join-Path $deploy "site.zip"
+if (Test-Path $siteZip) { Remove-Item $siteZip -Force }
+Compress-Archive -Path (Join-Path $src "*"), $zipPath, $manifestPath -DestinationPath $siteZip
+Write-Host "作成: $siteZip(サーバー担当者に渡す一式)"
 
 Write-Host ""
-Write-Host "配布パッケージができました。stampset-setup.zip を相手に渡してください。" -ForegroundColor Green
-Write-Host "相手の手順: zipを展開 → install.cmd をダブルクリック → Excel再起動"
+Write-Host "パッケージができました。" -ForegroundColor Green
+Write-Host "・site.zip          → サーバー担当者へ。$HostUrl の直下に展開してもらう"
+Write-Host "                      (展開後 $HostUrl/index.html がダウンロードページになる)"
+Write-Host "・stampset-setup.zip → 利用者へ直接渡す場合はこちら。展開 → install.cmd → Office再起動"
 Write-Host ""
-Write-Host "※ 事前に src/ の中身が $HostUrl で公開されている必要があります。"
-Write-Host "   検証コマンド: npx office-addin-manifest validate deploy/manifest.prod.xml"
+Write-Host "検証コマンド: npx office-addin-manifest validate deploy/manifest.prod.xml"

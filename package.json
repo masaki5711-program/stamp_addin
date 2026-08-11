@@ -7,7 +7,8 @@
     "certs": "office-addin-dev-certs install",
     "start": "http-server src -p 3000 -S -C %USERPROFILE%/.office-addin-dev-certs/localhost.crt -K %USERPROFILE%/.office-addin-dev-certs/localhost.key -c-1 --cors",
     "start:http": "http-server src -p 3000 -c-1 --cors",
-    "sideload": "office-addin-debugging start manifest.xml desktop --no-debug",
+    "sideload": "office-addin-debugging start manifest.xml desktop --app excel --no-debug",
+    "sideload:word": "office-addin-debugging start manifest.xml desktop --app word --no-debug",
     "sideload:stop": "office-addin-debugging stop manifest.xml",
     "validate": "office-addin-manifest validate manifest.xml"
   },

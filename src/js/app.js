@@ -199,7 +199,7 @@
           date: Stamp.formatDate(def.rows[1].format, now),
           stampedAt: now.toISOString()
         };
-        if (XL.isExcel()) {
+        if (XL.isOffice()) {
           return XL.insertStamp(png, def.frame.diameterMm, meta).then(function () {
             status("押印しました(" + meta.date + ")");
           });
@@ -331,10 +331,17 @@
     renderPreview();
     showTab("stamp");
 
-    XL.init().then(function (inExcel) {
-      $("host-mode").textContent = inExcel
-        ? "Excel に接続中"
-        : "ブラウザモード(押印はPNGダウンロード)";
+    XL.init().then(function (host) {
+      if (host === "excel") {
+        $("host-mode").textContent = "Excel に接続中";
+        $("btn-stamp").textContent = "選択セルに押印";
+      } else if (host === "word") {
+        $("host-mode").textContent = "Word に接続中";
+        $("btn-stamp").textContent = "カーソル位置に押印";
+      } else {
+        $("host-mode").textContent = "ブラウザモード(押印はPNGダウンロード)";
+        $("btn-stamp").textContent = "押印(PNGをダウンロード)";
+      }
     });
   }
 
