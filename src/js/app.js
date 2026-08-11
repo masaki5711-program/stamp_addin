@@ -113,8 +113,20 @@
     return Array.from(sliders).map(function (inp) { return parseFloat(inp.value) || 1; });
   }
 
+  var previewGen = 0;
+
   function renderPreview() {
-    $("preview").innerHTML = Stamp.renderSVG(editing, { date: new Date() });
+    var gen = ++previewGen;
+    var now = new Date();
+    if (editing.wear.seed) {
+      var dateText = Stamp.formatDate(editing.rows[1].format, now);
+      Stamp.verificationCode(editing, dateText).then(function (code) {
+        if (gen !== previewGen) return; // 古いプレビューは破棄
+        $("preview").innerHTML = Stamp.renderSVG(editing, { date: now, microtext: Stamp.formatCode(code) });
+      });
+    } else {
+      $("preview").innerHTML = Stamp.renderSVG(editing, { date: now });
+    }
     $("seed-text").textContent = editing.wear.seed
       ? editing.wear.seed
       : "(未生成 — 保存時に欠けを自動生成します)";
@@ -188,17 +200,25 @@
     var now = new Date();
     var maxTilt = def.options.randomTiltOnStampDeg || 0;
     var tilt = $("opt-random-tilt").checked && maxTilt > 0 ? (Math.random() * 2 - 1) * maxTilt : 0;
-    var svg = Stamp.renderSVG(def, { date: now, tiltDeg: tilt });
+    var dateText = Stamp.formatDate(def.rows[1].format, now);
 
     $("btn-stamp").disabled = true;
-    Stamp.toPNG(svg, def.frame.diameterMm, 300)
-      .then(function (png) {
+    Stamp.verificationCode(def, dateText)
+      .then(function (code) {
+        var svg = Stamp.renderSVG(def, { date: now, tiltDeg: tilt, microtext: Stamp.formatCode(code) });
+        return Stamp.toPNG(svg, def.frame.diameterMm, 600).then(function (png) {
+          return { png: png, code: code };
+        });
+      })
+      .then(function (r) {
         var meta = {
           stampId: def.id,
           name: def.name,
-          date: Stamp.formatDate(def.rows[1].format, now),
-          stampedAt: now.toISOString()
+          date: dateText,
+          stampedAt: now.toISOString(),
+          vcode: r.code
         };
+        var png = r.png;
         if (XL.isOffice()) {
           return XL.insertStamp(png, def.frame.diameterMm, meta).then(function () {
             status("押印しました(" + meta.date + ")");
@@ -209,6 +229,43 @@
       })
       .catch(function (e) { status("押印に失敗しました: " + e.message, true); })
       .finally(function () { $("btn-stamp").disabled = false; });
+  }
+
+  /* ---- 押印の検証 ---- */
+
+  function verifyStamps() {
+    $("btn-verify").disabled = true;
+    XL.collectStampMetas()
+      .then(function (metas) {
+        if (metas.length === 0) {
+          status("この" + (XL.hostType() === "word" ? "文書" : "シート") + "に押印が見つかりません");
+          return;
+        }
+        var checks = metas.map(function (m) {
+          var def = Store.get(m.stampId);
+          if (!def) return Promise.resolve({ m: m, result: "unknown" });
+          if (!m.vcode) return Promise.resolve({ m: m, result: "legacy" });
+          return Stamp.verificationCode(def, m.date).then(function (code) {
+            return { m: m, result: code === m.vcode ? "ok" : "ng" };
+          });
+        });
+        return Promise.all(checks).then(function (results) {
+          var ok = results.filter(function (r) { return r.result === "ok"; }).length;
+          var ng = results.filter(function (r) { return r.result === "ng"; });
+          var unknown = results.filter(function (r) { return r.result === "unknown" || r.result === "legacy"; }).length;
+          var msg = "検証: 正常 " + ok + "件";
+          if (ng.length) msg += " / 改ざんの疑い " + ng.length + "件";
+          if (unknown) msg += " / 検証不可 " + unknown + "件(手元にない印・旧形式)";
+          status(msg, ng.length > 0);
+          if (ng.length) {
+            alert("改ざんの疑いがある押印:\n" + ng.map(function (r) {
+              return "・" + r.m.name + " " + r.m.date + "(コード不一致)";
+            }).join("\n"));
+          }
+        });
+      })
+      .catch(function (e) { status("検証に失敗しました: " + e.message, true); })
+      .finally(function () { $("btn-verify").disabled = false; });
   }
 
   /* ---- ライブラリタブ ---- */
@@ -322,6 +379,7 @@
     $("btn-reseed").addEventListener("click", reseed);
     $("btn-save").addEventListener("click", saveStamp);
     $("btn-stamp").addEventListener("click", doStamp);
+    $("btn-verify").addEventListener("click", verifyStamps);
     $("f-import").addEventListener("change", function () {
       if (this.files[0]) importStamp(this.files[0]);
       this.value = "";
@@ -341,6 +399,7 @@
       } else {
         $("host-mode").textContent = "ブラウザモード(押印はPNGダウンロード)";
         $("btn-stamp").textContent = "押印(PNGをダウンロード)";
+        $("btn-verify").hidden = true;
       }
     });
   }

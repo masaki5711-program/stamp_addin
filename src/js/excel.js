@@ -61,6 +61,43 @@
     return Promise.reject(new Error("Office上で実行されていません"));
   }
 
+  /**
+   * 文書内の押印メタデータ(altTextのJSON)を収集する。
+   * Excel: アクティブシートの図形 / Word: 本文のインライン画像
+   */
+  function collectStampMetas() {
+    function parse(list) {
+      var out = [];
+      list.forEach(function (t) {
+        if (!t) return;
+        try {
+          var m = JSON.parse(t);
+          if (m && m.stampId) out.push(m);
+        } catch (e) { /* 押印以外の画像は無視 */ }
+      });
+      return out;
+    }
+    if (hostType === "excel") {
+      return Excel.run(function (ctx) {
+        var shapes = ctx.workbook.worksheets.getActiveWorksheet().shapes;
+        shapes.load("items/altTextDescription");
+        return ctx.sync().then(function () {
+          return parse(shapes.items.map(function (s) { return s.altTextDescription; }));
+        });
+      });
+    }
+    if (hostType === "word") {
+      return Word.run(function (ctx) {
+        var pics = ctx.document.body.inlinePictures;
+        pics.load("items/altTextDescription");
+        return ctx.sync().then(function () {
+          return parse(pics.items.map(function (p) { return p.altTextDescription; }));
+        });
+      });
+    }
+    return Promise.reject(new Error("Office上で実行されていません"));
+  }
+
   function downloadPNG(pngDataUrl, filename) {
     var a = document.createElement("a");
     a.href = pngDataUrl;
@@ -75,6 +112,7 @@
     hostType: function () { return hostType; },
     isOffice: function () { return hostType !== null; },
     insertStamp: insertStamp,
+    collectStampMetas: collectStampMetas,
     downloadPNG: downloadPNG
   };
 })(window);

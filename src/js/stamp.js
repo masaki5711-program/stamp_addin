@@ -98,7 +98,10 @@
     };
   }
 
-  /* ---- 欠けの導出(シードから決定論的) ---- */
+  /* ---- 欠けの導出(シードから決定論的) ----
+   * 実物の摩耗に似せ、枠の縁に沿った浅い楕円ニックのみ生成する。
+   * 各ニック: {x, y, rx, ry, rot}(rotは度)
+   */
 
   function deriveWear(def) {
     if (!def.wear || !def.wear.seed) return [];
@@ -108,32 +111,55 @@
     var strokeW = def.frame.strokeWidthMm * 10;
     var frameR = c - strokeW / 2;
     var innerR = c - strokeW;
-    var chips = [];
+    var nicks = [];
 
-    // 枠の欠け: 4〜9箇所(位置・深さ・大きさ)
-    var nFrame = 4 + Math.floor(rnd() * 6);
+    // 枠のニック: 3〜6箇所。外縁/内縁のどちらかを接線方向に浅く欠く
+    var nFrame = 3 + Math.floor(rnd() * 4);
     for (var i = 0; i < nFrame; i++) {
       var th = rnd() * Math.PI * 2;
-      var rr = frameR + (rnd() - 0.5) * strokeW * 1.4;
-      chips.push({ x: c + rr * Math.cos(th), y: c + rr * Math.sin(th), r: strokeW * (0.35 + rnd() * 0.65) });
+      var edge = rnd() < 0.5 ? 1 : -1;
+      var rr = frameR + edge * strokeW * 0.55;
+      nicks.push({
+        x: c + rr * Math.cos(th),
+        y: c + rr * Math.sin(th),
+        rx: strokeW * (0.6 + rnd() * 1.2),   // 接線方向の長さ
+        ry: strokeW * (0.25 + rnd() * 0.45), // 径方向の深さ
+        rot: (th * 180 / Math.PI) + 90
+      });
     }
-    // 区切り線の欠け: 0〜2箇所
+    // 区切り線のニック: 0〜2箇所。線の上下どちらかの縁を浅く欠く
     var nDiv = Math.floor(rnd() * 3);
     var divYs = dividerYs(def);
     for (var j = 0; j < nDiv && divYs.length > 0; j++) {
       var y = divYs[Math.floor(rnd() * divYs.length)];
       var dy = y - c;
       var half = Math.sqrt(Math.max(0, innerR * innerR - dy * dy));
-      chips.push({ x: c + (rnd() * 2 - 1) * half * 0.85, y: y, r: strokeW * (0.3 + rnd() * 0.5) });
+      nicks.push({
+        x: c + (rnd() * 2 - 1) * half * 0.8,
+        y: y + (rnd() < 0.5 ? 1 : -1) * strokeW * 0.3,
+        rx: strokeW * (0.5 + rnd() * 0.8),
+        ry: strokeW * (0.2 + rnd() * 0.35),
+        rot: 0
+      });
     }
-    // 文字のインク抜け: 微小点(0.05〜0.15mm)
-    var nDot = 3 + Math.floor(rnd() * 4);
-    for (var k = 0; k < nDot; k++) {
-      var th2 = rnd() * Math.PI * 2;
-      var rr2 = rnd() * innerR * 0.9;
-      chips.push({ x: c + rr2 * Math.cos(th2), y: c + rr2 * Math.sin(th2), r: 0.5 + rnd() * 1.0 });
-    }
-    return chips;
+    return nicks;
+  }
+
+  /* ---- 検証コード ----
+   * SHA-256(印ID | シード | 日付文字列) の先頭8桁(16進大文字)。
+   * シードを知らない第三者は、日付を変えた押印に正しいコードを付けられない。
+   */
+  function verificationCode(def, dateText) {
+    var data = new TextEncoder().encode(def.id + "|" + (def.wear && def.wear.seed) + "|" + dateText);
+    return crypto.subtle.digest("SHA-256", data).then(function (buf) {
+      return Array.from(new Uint8Array(buf).slice(0, 4))
+        .map(function (b) { return b.toString(16).padStart(2, "0"); })
+        .join("").toUpperCase();
+    });
+  }
+
+  function formatCode(code) {
+    return code.slice(0, 4) + "·" + code.slice(4, 8);
   }
 
   /* ---- レイアウト ---- */
@@ -192,14 +218,15 @@
     var innerR = c - strokeW;
     var ink = def.color.ink;
 
-    var chips = showWear ? deriveWear(def) : [];
+    var nicks = showWear ? deriveWear(def) : [];
     var maskId = "wear_" + (def.wear && def.wear.seed ? def.wear.seed.slice(0, 8) : "none");
 
     var s = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + S + " " + S + '" width="' + S + '" height="' + S + '">';
     s += "<defs><mask id=\"" + maskId + "\">";
     s += '<rect x="0" y="0" width="' + S + '" height="' + S + '" fill="#fff"/>';
-    chips.forEach(function (ch) {
-      s += '<circle cx="' + ch.x.toFixed(2) + '" cy="' + ch.y.toFixed(2) + '" r="' + ch.r.toFixed(2) + '" fill="#000"/>';
+    nicks.forEach(function (ch) {
+      s += '<ellipse cx="' + ch.x.toFixed(2) + '" cy="' + ch.y.toFixed(2) + '" rx="' + ch.rx.toFixed(2) + '" ry="' + ch.ry.toFixed(2) +
+        '" transform="rotate(' + ch.rot.toFixed(1) + " " + ch.x.toFixed(2) + " " + ch.y.toFixed(2) + ')" fill="#000"/>';
     });
     s += "</mask></defs>";
 
@@ -252,6 +279,18 @@
         : inner;
     });
 
+    // マイクロ文字(検証コード): 日付段の下端に約0.25mmで印字
+    if (opts.microtext) {
+      var bs = bands(def);
+      var target = bs.find(function (b) { return b.row.role === "date"; }) || bs[bs.length - 1];
+      if (target) {
+        var msize = S * 0.021;
+        s += '<text x="' + c + '" y="' + (target.y1 - msize * 0.3).toFixed(2) + '" text-anchor="middle" fill="' + ink +
+          '" font-size="' + msize.toFixed(2) + '" font-family="Consolas, monospace" letter-spacing="' + (msize * 0.25).toFixed(2) + '">' +
+          esc(opts.microtext) + "</text>";
+      }
+    }
+
     s += "</g></svg>";
     return s;
   }
@@ -284,6 +323,8 @@
     newSeedHex: newSeedHex,
     formatDate: formatDate,
     deriveWear: deriveWear,
+    verificationCode: verificationCode,
+    formatCode: formatCode,
     renderSVG: renderSVG,
     toPNG: toPNG
   };
