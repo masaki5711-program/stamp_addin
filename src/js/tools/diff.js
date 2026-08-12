@@ -22,7 +22,9 @@
   function addr(r, c) { return colLetter(c) + (r + 1); }
 
   /**
-   * 2つの usedRange 情報 {values, rowIndex, columnIndex} を絶対座標で比較する。
+   * 2つのグリッド {values, rowIndex, columnIndex} を絶対座標で比較する。
+   * values には「表示上の文字列」(Range.text)を渡す — 生の値で比べると
+   * 丸め表示や書式違いのセルが誤検出されるため。
    * 戻り値: [{r, c, a, b}](絶対0始まり)
    */
   function diffGrids(A, B) {
@@ -82,8 +84,14 @@
 
   function usedRangeOf(ctx, name) {
     var rng = ctx.workbook.worksheets.getItem(name).getUsedRangeOrNullObject(true);
-    rng.load("values,rowIndex,columnIndex,isNullObject");
+    rng.load("text,rowIndex,columnIndex,isNullObject");
     return rng;
+  }
+
+  function toGrid(rng) {
+    return rng.isNullObject
+      ? { values: [], rowIndex: 0, columnIndex: 0 }
+      : { values: rng.text, rowIndex: rng.rowIndex, columnIndex: rng.columnIndex };
   }
 
   function compare() {
@@ -96,9 +104,7 @@
       var ra = usedRangeOf(ctx, nameA);
       var rb = usedRangeOf(ctx, nameB);
       return ctx.sync().then(function () {
-        var A = ra.isNullObject ? { values: [], rowIndex: 0, columnIndex: 0 } : ra;
-        var B = rb.isNullObject ? { values: [], rowIndex: 0, columnIndex: 0 } : rb;
-        var diffs = diffGrids(A, B);
+        var diffs = diffGrids(toGrid(ra), toGrid(rb));
         renderResult(nameA, nameB, diffs);
         if ($("chk-diff-highlight").checked && diffs.length > 0) {
           var sheetB = ctx.workbook.worksheets.getItem(nameB);

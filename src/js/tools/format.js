@@ -94,6 +94,10 @@
       rng.load("rowCount,columnCount,cellCount");
       return ctx.sync().then(function () {
         if (rng.cellCount < 2) throw new Error("表の範囲を選択してから実行してください");
+        if (rng.rowCount > 5000 || rng.columnCount > 100) {
+          throw new Error("範囲が大きすぎます(" + rng.rowCount + "行×" + rng.columnCount +
+            "列)。列全体ではなく表の範囲だけを選択してください");
+        }
         if (p.border !== "none") {
           ["EdgeTop", "EdgeBottom", "EdgeLeft", "EdgeRight", "InsideHorizontal", "InsideVertical"]
             .forEach(function (edge) {

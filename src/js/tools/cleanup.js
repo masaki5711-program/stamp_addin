@@ -21,17 +21,38 @@
         styles.load("items/name,builtIn");
       }
       return ctx.sync().then(function () {
-        renderNames(names.items.map(function (n) { return { name: n.name, visible: n.visible }; }));
-        renderSheets(sheets.items
-          .filter(function (s) { return s.visibility !== "Visible"; })
-          .map(function (s) { return s.name; }));
-        renderStyles(styleOk ? styles.items.filter(function (st) { return !st.builtIn; }).map(function (st) { return st.name; }) : null);
-        UI.status("スキャンしました");
+        // シートスコープの名前定義も収集(ブック全体の名前と別枠で管理されている)
+        var perSheet = sheets.items.map(function (s) { return { sheetName: s.name, names: s.names }; });
+        perSheet.forEach(function (p) { p.names.load("items/name,visible"); });
+        return ctx.sync().then(function () {
+          var all = names.items.map(function (n) { return { name: n.name, visible: n.visible, scope: null }; });
+          perSheet.forEach(function (p) {
+            p.names.items.forEach(function (n) {
+              all.push({ name: n.name, visible: n.visible, scope: p.sheetName });
+            });
+          });
+          renderNames(all);
+          renderSheets(sheets.items
+            .filter(function (s) { return s.visibility !== "Visible"; })
+            .map(function (s) { return s.name; }));
+          renderStyles(styleOk ? styles.items.filter(function (st) { return !st.builtIn; }).map(function (st) { return st.name; }) : null);
+          UI.status("スキャンしました");
+        });
       });
     }).catch(function (e) {
       UI.status("スキャンに失敗しました: " + e.message, true);
     }).finally(function () {
       $("btn-clean-scan").disabled = false;
+    });
+  }
+
+  function deleteName(item) {
+    return Excel.run(function (ctx) {
+      var coll = item.scope
+        ? ctx.workbook.worksheets.getItem(item.scope).names
+        : ctx.workbook.names;
+      coll.getItem(item.name).delete();
+      return ctx.sync();
     });
   }
 
@@ -44,12 +65,11 @@
       var row = document.createElement("div");
       row.className = "clean-row";
       row.innerHTML = '<span class="clean-label"></span><button type="button" class="danger">削除</button>';
-      row.querySelector(".clean-label").textContent = n.name + (n.visible ? "" : "(非表示)");
+      row.querySelector(".clean-label").textContent =
+        n.name + (n.scope ? "(シート: " + n.scope + ")" : "") + (n.visible ? "" : "(非表示)");
       row.querySelector("button").addEventListener("click", function () {
-        Excel.run(function (ctx) {
-          ctx.workbook.names.getItem(n.name).delete();
-          return ctx.sync();
-        }).then(function () { row.remove(); UI.status("名前定義「" + n.name + "」を削除しました"); })
+        deleteName(n)
+          .then(function () { row.remove(); UI.status("名前定義「" + n.name + "」を削除しました"); })
           .catch(function (e) { UI.status("削除に失敗: " + e.message, true); });
       });
       host.appendChild(row);
@@ -57,15 +77,25 @@
   }
 
   function deleteAllNames() {
-    if (!confirm("すべての名前定義を削除しますか?\n数式が名前を参照している場合、その数式はエラーになります。")) return;
+    if (!confirm("すべての名前定義(シートスコープ含む)を削除しますか?\n数式が名前を参照している場合、その数式はエラーになります。")) return;
     Excel.run(function (ctx) {
       var names = ctx.workbook.names;
       names.load("items/name");
+      var sheets = ctx.workbook.worksheets;
+      sheets.load("items/name");
       return ctx.sync().then(function () {
-        names.items.forEach(function (n) { n.delete(); });
+        var perSheet = sheets.items.map(function (s) { return s.names; });
+        perSheet.forEach(function (nc) { nc.load("items/name"); });
         return ctx.sync().then(function () {
-          UI.status(names.items.length + "件の名前定義を削除しました");
-          scan();
+          var count = 0;
+          names.items.forEach(function (n) { n.delete(); count++; });
+          perSheet.forEach(function (nc) {
+            nc.items.forEach(function (n) { n.delete(); count++; });
+          });
+          return ctx.sync().then(function () {
+            UI.status(count + "件の名前定義を削除しました");
+            scan();
+          });
         });
       });
     }).catch(function (e) { UI.status("削除に失敗: " + e.message, true); });

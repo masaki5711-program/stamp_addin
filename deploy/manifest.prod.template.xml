@@ -110,10 +110,10 @@
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GroupLabel" DefaultValue="便利ツール"/>
-        <bt:String id="ButtonLabel" DefaultValue="デート印"/>
+        <bt:String id="ButtonLabel" DefaultValue="便利ツール"/>
       </bt:ShortStrings>
       <bt:LongStrings>
-        <bt:String id="ButtonTip" DefaultValue="デート印を作成・押印します。日付は自動で当日になります。"/>
+        <bt:String id="ButtonTip" DefaultValue="デート印・シート差分比較・定型書式などの便利ツールを開きます。"/>
       </bt:LongStrings>
     </Resources>
   </VersionOverrides>
