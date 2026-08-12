@@ -1,6 +1,7 @@
 /**
  * tools/diff.js — ツール③: シート差分比較(Excel専用)
- * 2シートの値をセル単位で比較し、一覧表示+シートB側をハイライトする。
+ * 2シートの「表示上の文字列」をセル単位で比較し、一覧表示+シートB側をハイライトする。
+ * ハイライトは記録され、再比較時に前回分を自動で消してから塗り直す。ON/OFF切替も可能。
  */
 (function () {
   "use strict";
@@ -10,7 +11,23 @@
   var MAX_LIST = 200;      // 一覧表示の上限
   var MAX_HIGHLIGHT = 500; // ハイライトの上限
   var HIGHLIGHT_COLOR = "#FFE79E";
-  var lastHighlight = null; // { sheetName, cells: [{r,c}] }
+  var HL_KEY = "diffHighlight.v1";
+
+  // { docKey, sheetName, cells: [{r,c}], on: bool }
+  var hl = null;
+
+  function docKey() {
+    try {
+      return (Office.context && Office.context.document && Office.context.document.url) || "doc";
+    } catch (e) { return "doc"; }
+  }
+
+  function saveHl() { Store.writeKey(HL_KEY, hl); }
+
+  function loadHl() {
+    var s = Store.readKey(HL_KEY, null);
+    if (s && s.docKey === docKey() && s.cells && s.cells.length) hl = s;
+  }
 
   function colLetter(c) {
     var s = "";
@@ -53,6 +70,47 @@
     }
     return out;
   }
+
+  /* ---- ハイライトの塗り・消し ---- */
+
+  function setFills(state, on) {
+    return Excel.run(function (ctx) {
+      var sheet = ctx.workbook.worksheets.getItemOrNullObject(state.sheetName);
+      return ctx.sync().then(function () {
+        if (sheet.isNullObject) return; // シートが消えていたら何もしない
+        state.cells.forEach(function (cell) {
+          var f = sheet.getCell(cell.r, cell.c).format.fill;
+          if (on) f.color = HIGHLIGHT_COLOR; else f.clear();
+        });
+        return ctx.sync();
+      });
+    });
+  }
+
+  function updateToggleButton() {
+    var btn = $("btn-diff-toggle");
+    if (!hl || !hl.cells.length) { btn.hidden = true; return; }
+    btn.hidden = false;
+    btn.textContent = hl.on ? "色付けを消す" : "色付けを付け直す";
+  }
+
+  function toggleHighlight() {
+    if (!hl) return;
+    var next = !hl.on;
+    $("btn-diff-toggle").disabled = true;
+    setFills(hl, next).then(function () {
+      hl.on = next;
+      saveHl();
+      updateToggleButton();
+      UI.status(next ? "差分セルを色付けしました" : "色付けを消しました(記録は残っています)");
+    }).catch(function (e) {
+      UI.status("切り替えに失敗: " + e.message, true);
+    }).finally(function () {
+      $("btn-diff-toggle").disabled = false;
+    });
+  }
+
+  /* ---- シート一覧・比較 ---- */
 
   function loadSheetNames() {
     return Excel.run(function (ctx) {
@@ -100,26 +158,38 @@
     if (nameA === nameB) { UI.status("異なるシートを選択してください", true); return; }
 
     $("btn-diff-run").disabled = true;
-    Excel.run(function (ctx) {
-      var ra = usedRangeOf(ctx, nameA);
-      var rb = usedRangeOf(ctx, nameB);
-      return ctx.sync().then(function () {
-        var diffs = diffGrids(toGrid(ra), toGrid(rb));
-        renderResult(nameA, nameB, diffs);
-        if ($("chk-diff-highlight").checked && diffs.length > 0) {
-          var sheetB = ctx.workbook.worksheets.getItem(nameB);
-          var targets = diffs.slice(0, MAX_HIGHLIGHT);
-          targets.forEach(function (d) {
-            sheetB.getCell(d.r, d.c).format.fill.color = HIGHLIGHT_COLOR;
-          });
-          lastHighlight = { sheetName: nameB, cells: targets.map(function (d) { return { r: d.r, c: d.c }; }) };
-          $("btn-diff-clear").hidden = false;
-          return ctx.sync();
-        }
+    // 前回のハイライトを必ず消してから比較する(直した差分の色が残らないように)
+    var clearOld = (hl && hl.cells.length && hl.on) ? setFills(hl, false) : Promise.resolve();
+    clearOld.then(function () {
+      hl = null;
+      saveHl();
+      return Excel.run(function (ctx) {
+        var ra = usedRangeOf(ctx, nameA);
+        var rb = usedRangeOf(ctx, nameB);
+        return ctx.sync().then(function () {
+          var diffs = diffGrids(toGrid(ra), toGrid(rb));
+          renderResult(nameA, nameB, diffs);
+          if ($("chk-diff-highlight").checked && diffs.length > 0) {
+            var sheetB = ctx.workbook.worksheets.getItem(nameB);
+            var targets = diffs.slice(0, MAX_HIGHLIGHT);
+            targets.forEach(function (d) {
+              sheetB.getCell(d.r, d.c).format.fill.color = HIGHLIGHT_COLOR;
+            });
+            hl = {
+              docKey: docKey(),
+              sheetName: nameB,
+              cells: targets.map(function (d) { return { r: d.r, c: d.c }; }),
+              on: true
+            };
+            saveHl();
+            return ctx.sync();
+          }
+        });
       });
     }).catch(function (e) {
       UI.status("比較に失敗しました: " + e.message, true);
     }).finally(function () {
+      updateToggleButton();
       $("btn-diff-run").disabled = false;
     });
   }
@@ -129,7 +199,7 @@
     var list = $("diff-list");
     list.innerHTML = "";
     if (diffs.length === 0) {
-      sum.textContent = "差分はありません(「" + nameA + "」と「" + nameB + "」は値が一致)";
+      sum.textContent = "差分はありません(「" + nameA + "」と「" + nameB + "」は表示上一致)";
       return;
     }
     sum.textContent = "差分 " + diffs.length + "件" +
@@ -153,22 +223,6 @@
     });
   }
 
-  function clearHighlight() {
-    if (!lastHighlight) return;
-    var h = lastHighlight;
-    Excel.run(function (ctx) {
-      var sheet = ctx.workbook.worksheets.getItem(h.sheetName);
-      h.cells.forEach(function (cell) {
-        sheet.getCell(cell.r, cell.c).format.fill.clear();
-      });
-      return ctx.sync();
-    }).then(function () {
-      lastHighlight = null;
-      $("btn-diff-clear").hidden = true;
-      UI.status("色付けを解除しました");
-    }).catch(function (e) { UI.status("解除に失敗: " + e.message, true); });
-  }
-
   UI.registerTool({
     id: "diff",
     name: "シート差分比較",
@@ -178,12 +232,13 @@
     init: function () {
       $("btn-diff-refresh").addEventListener("click", refreshSheets);
       $("btn-diff-run").addEventListener("click", compare);
-      $("btn-diff-clear").addEventListener("click", clearHighlight);
-      if (UI.host() === "excel") refreshSheets();
+      $("btn-diff-toggle").addEventListener("click", toggleHighlight);
+      if (UI.host() === "excel") {
+        refreshSheets();
+        loadHl();
+        updateToggleButton();
+      }
     },
     _test: { diffGrids: diffGrids, colLetter: colLetter }
   });
-
-  // nodeテスト用
-  if (typeof module !== "undefined") window.ToolDiffTest = { diffGrids: diffGrids, colLetter: colLetter };
 })();

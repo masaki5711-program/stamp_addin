@@ -159,12 +159,13 @@
       </div>
       <div class="btn-row">
         <button id="btn-diff-refresh" type="button">シート一覧を更新</button>
-        <button id="btn-diff-clear" type="button" hidden>色付けを解除</button>
+        <button id="btn-diff-toggle" type="button" hidden>色付けを消す</button>
       </div>
       <label class="opt"><input type="checkbox" id="chk-diff-highlight" checked> 差分セルを比較先(B)で色付けする</label>
       <button class="primary" id="btn-diff-run" type="button">比較する</button>
       <p id="diff-summary" class="tool-lead"></p>
       <div id="diff-list" class="diff-list"></div>
+      <p class="hint">再比較すると前回の色付けは自動で消えます。「色付けを消す/付け直す」でいつでも切り替えられます。※色付けを消す際、そのセルの塗りつぶしは「なし」に戻ります(元から色が付いていたセルの色は復元されません)。</p>
     </div>
   </section>
 
