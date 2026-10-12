@@ -253,12 +253,10 @@
           var msg = "検証: 正常 " + ok + "件";
           if (ng.length) msg += " / 改ざんの疑い " + ng.length + "件";
           if (unknown) msg += " / 検証不可 " + unknown + "件(手元にない印・旧形式)";
-          status(msg, ng.length > 0);
           if (ng.length) {
-            alert("改ざんの疑いがある押印:\n" + ng.map(function (r) {
-              return "・" + r.m.name + " " + r.m.date + "(コード不一致)";
-            }).join("\n"));
+            msg += " / 不一致: " + ng.map(function (r) { return r.m.name + " " + r.m.date; }).join("、");
           }
+          status(msg, ng.length > 0);
         });
       })
       .catch(function (e) { status("検証に失敗しました: " + e.message, true); })
@@ -317,7 +315,7 @@
           URL.revokeObjectURL(a.href);
           status("書き出しました。※定義ファイルを渡すと欠けごと複製できてしまう点に注意");
         } else if (act === "del") {
-          if (confirm("「" + def.name + "」を削除しますか?")) {
+          if (UI.confirmClick(ev.target)) {
             Store.remove(def.id);
             renderLibList();
             status("削除しました");

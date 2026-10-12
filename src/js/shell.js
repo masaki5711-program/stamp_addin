@@ -20,6 +20,24 @@
     if (msg) statusTimer = setTimeout(function () { el.textContent = ""; }, 8000);
   }
 
+  // Officeのタスクペインでは confirm()/alert() が無効(常にキャンセル扱い)なので、
+  // 破壊的な操作は「同じボタンをもう一度押す」で確認する。2回目のクリックで true を返す
+  function confirmClick(btn) {
+    if (btn.dataset.armed) {
+      clearTimeout(Number(btn.dataset.armed));
+      btn.textContent = btn.dataset.label;
+      delete btn.dataset.armed;
+      return true;
+    }
+    btn.dataset.label = btn.textContent;
+    btn.textContent = "もう一度押すと実行";
+    btn.dataset.armed = String(setTimeout(function () {
+      btn.textContent = btn.dataset.label;
+      delete btn.dataset.armed;
+    }, 4000));
+    return false;
+  }
+
   function registerTool(t) { tools.push(t); }
 
   function show(toolId) {
@@ -75,6 +93,7 @@
 
   global.UI = {
     status: status,
+    confirmClick: confirmClick,
     registerTool: registerTool,
     show: show,
     host: function () { return host; },

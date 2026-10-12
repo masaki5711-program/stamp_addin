@@ -77,7 +77,8 @@
   }
 
   function deleteAllNames() {
-    if (!confirm("すべての名前定義(シートスコープ含む)を削除しますか?\n数式が名前を参照している場合、その数式はエラーになります。")) return;
+    // 数式が名前を参照している場合、その数式はエラーになる
+    if (!UI.confirmClick($("btn-clean-names"))) return;
     Excel.run(function (ctx) {
       var names = ctx.workbook.names;
       names.load("items/name");
@@ -137,7 +138,8 @@
   }
 
   function deleteCustomStyles() {
-    if (!confirm("カスタムスタイルをすべて削除しますか?\n該当スタイルを使っているセルは標準スタイルに戻ります。")) return;
+    // 該当スタイルを使っているセルは標準スタイルに戻る
+    if (!UI.confirmClick($("btn-clean-styles"))) return;
     Excel.run(function (ctx) {
       var styles = ctx.workbook.styles;
       styles.load("items/name,builtIn");

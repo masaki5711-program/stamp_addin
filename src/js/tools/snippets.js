@@ -75,7 +75,7 @@
           $("btn-snip-save").textContent = "更新";
           $("snip-title").focus();
         } else if (act === "del") {
-          if (confirm("「" + s.title + "」を削除しますか?")) {
+          if (UI.confirmClick(ev.target)) {
             saveList(load().filter(function (x) { return x.id !== s.id; }));
             if (editingId === s.id) resetForm();
             render();
