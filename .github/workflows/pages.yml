@@ -22,7 +22,31 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v5
+      - id: pages
+        uses: actions/configure-pages@v5
+      - name: Build site (version tag, manifest, installer zip)
+        env:
+          HOST_URL: ${{ steps.pages.outputs.base_url }}
+        run: |
+          # 更新が利用者に確実に届くよう、JS/CSSの読み込みにコミットIDを付ける
+          sed -i "s/?v=dev/?v=${GITHUB_SHA::8}/g" src/taskpane.html src/commands.html
+          # 配布用マニフェストとインストーラーzipを、公開URLに合わせて生成する
+          python3 - <<'PY'
+          import io, os, zipfile
+          host = os.environ["HOST_URL"].rstrip("/")
+          tpl = io.open("deploy/manifest.prod.template.xml", encoding="utf-8").read()
+          manifest = tpl.replace("{{HOST_URL}}", host)
+          io.open("src/manifest.prod.xml", "w", encoding="utf-8", newline="\n").write(manifest)
+          with zipfile.ZipFile("src/stampset-setup.zip", "w", zipfile.ZIP_DEFLATED) as z:
+              z.writestr("manifest.prod.xml", manifest)
+              for name in sorted(os.listdir("deploy/installer")):
+                  if name == "manifest.prod.xml":
+                      continue
+                  data = open(os.path.join("deploy/installer", name), "rb").read()
+                  # Windows向けの配布物なので改行をCRLFにそろえる
+                  data = data.replace(b"\r\n", b"\n").replace(b"\n", b"\r\n")
+                  z.writestr(name, data)
+          PY
       - uses: actions/upload-pages-artifact@v3
         with:
           path: src

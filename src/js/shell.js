@@ -38,6 +38,14 @@
     return false;
   }
 
+  // テキスト欄の内容をクリップボードへ(タスクペインでは clipboard API が使えない場合があるため両方試す)
+  function copyFrom(el) {
+    el.focus();
+    el.select();
+    try { document.execCommand("copy"); } catch (e) { /* 下の clipboard API に任せる */ }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(el.value).catch(function () {});
+  }
+
   function registerTool(t) { tools.push(t); }
 
   function show(toolId) {
@@ -94,15 +102,21 @@
   global.UI = {
     status: status,
     confirmClick: confirmClick,
+    copyFrom: copyFrom,
+    reload: function () { location.reload(); },
+    tool: function (id) { return tools.find(function (t) { return t.id === id; }); },
     registerTool: registerTool,
     show: show,
     host: function () { return host; },
     bootstrap: bootstrap
   };
 
-  if (global.Office && Office.onReady) {
-    Office.onReady().then(function () { bootstrap(); });
-  } else {
-    document.addEventListener("DOMContentLoaded", bootstrap);
+  // 後続のスクリプト(各ツールの登録)を読み終えてから起動する
+  function start() {
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bootstrap);
+    else bootstrap();
   }
+
+  if (global.Office && Office.onReady) Office.onReady().then(start);
+  else start();
 })(window);

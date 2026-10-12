@@ -14,7 +14,7 @@ if ($HostUrl -notmatch "^https://") {
 }
 
 # 1. テンプレートから本番マニフェストを生成
-$template = Get-Content (Join-Path $deploy "manifest.prod.template.xml") -Raw
+$template = Get-Content (Join-Path $deploy "manifest.prod.template.xml") -Raw -Encoding UTF8
 $manifest = $template -replace "\{\{HOST_URL\}\}", $HostUrl
 $manifestPath = Join-Path $deploy "manifest.prod.xml"
 Set-Content -Path $manifestPath -Value $manifest -Encoding UTF8

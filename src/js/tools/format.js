@@ -63,6 +63,7 @@
         del.textContent = "×";
         del.title = "このプリセットを削除";
         del.addEventListener("click", function () {
+          if (!UI.confirmClick(del)) return;
           var list = Store.readKey(KEY, []).filter(function (x) { return x.name !== p.name; });
           Store.writeKey(KEY, list);
           renderPresets();
@@ -102,7 +103,7 @@
           ["EdgeTop", "EdgeBottom", "EdgeLeft", "EdgeRight", "InsideHorizontal", "InsideVertical"]
             .forEach(function (edge) {
               var b = rng.format.borders.getItem(edge);
-              b.style = p.border === "medium" ? "Continuous" : "Continuous";
+              b.style = "Continuous";
               b.weight = p.border === "medium" ? "Medium" : "Thin";
               b.color = "#A9A296";
             });

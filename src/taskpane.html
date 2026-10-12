@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>便利アドインセット</title>
   <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
-  <link rel="stylesheet" href="css/taskpane.css?v=20261012b">
+  <link rel="stylesheet" href="css/taskpane.css?v=dev">
 </head>
 <body>
   <header class="app-header">
@@ -33,14 +33,28 @@
       <button class="tab" data-tab="stamp" type="button">押印</button>
       <button class="tab" data-tab="designer" type="button">デザイナ</button>
       <button class="tab" data-tab="library" type="button">ライブラリ</button>
+      <button class="tab" data-tab="history" type="button">履歴</button>
     </nav>
 
     <section class="panel" id="panel-stamp" hidden>
       <div id="stamp-list" class="stamp-list"></div>
+      <div class="save-row">
+        <label for="opt-stamp-date">押印日</label>
+        <input type="date" id="opt-stamp-date">
+        <button id="btn-stamp-today" type="button">今日</button>
+      </div>
       <label class="opt"><input type="checkbox" id="opt-random-tilt" checked> 押印時にわずかにランダムで傾ける</label>
+      <label class="opt" id="opt-per-cell-wrap"><input type="checkbox" id="opt-per-cell"> 選択した各セルに1つずつ押す(最大100セル)</label>
       <button class="primary" id="btn-stamp" type="button">押印</button>
       <button id="btn-verify" type="button" class="verify-btn">この文書の押印を検証</button>
-      <p class="hint">日付は押印時に自動取得されます。Excelでは選択セルの中央、Wordではカーソル位置に押印されます。印面には拡大しないと見えない検証コード(マイクロ文字)が入り、日付や名前を改変した偽造は「検証」で見破れます。</p>
+      <div id="verify-list" class="clean-list"></div>
+      <fieldset id="approval-box">
+        <legend>承認欄を作る</legend>
+        <label>見出し(カンマ区切り・左から) <input type="text" id="approval-labels" value="承認,確認,担当"></label>
+        <div class="btn-row"><button id="btn-approval" type="button">選択セルから承認欄を作成</button></div>
+        <p class="hint">選択中のセルを左上として、見出し行と押印行の枠を作ります。列幅と行の高さは、上で選んでいる印が収まる大きさに変わります。作成後は押印行が選択されるので、そのまま「押印」で全員分を押せます。</p>
+      </fieldset>
+      <p class="hint">押印日は既定で今日です。Excelでは選択セルの中央、Wordではカーソル位置に押印されます。ここで選んだ印は、リボンの「押印」ボタンでも使われます。印面には拡大しないと見えない検証コード(マイクロ文字)が入ります。「検証」は、押印に記録された日付とコードが印の定義と合うかを全シートについて確認します(印影の画像そのものの書き換えまでは検出できません)。</p>
     </section>
 
     <section class="panel" id="panel-designer" hidden>
@@ -58,8 +72,9 @@
         <fieldset>
           <legend>基本</legend>
           <label>印の名前 <input type="text" id="f-name" placeholder="例: 営業部 藤川"></label>
+          <label>枠の形 <select id="f-shape"></select></label>
           <div class="grid2">
-            <label>外径(mm) <input type="number" id="f-diameter" min="8" max="30" step="0.5" value="12"></label>
+            <label>大きさ(mm・長辺) <input type="number" id="f-diameter" min="8" max="30" step="0.5" value="12"></label>
             <label>線幅(mm) <input type="number" id="f-stroke" min="0.2" max="1.2" step="0.05" value="0.35"></label>
           </div>
           <div class="grid2">
@@ -99,6 +114,7 @@
 
         <fieldset>
           <legend>中段(日付)</legend>
+          <label class="opt"><input type="checkbox" id="f-r1-enabled" checked> 使用する(オフにすると日付なしの認印になります)</label>
           <label>日付書式 <select id="f-r1-format"></select></label>
           <div class="grid2">
             <label>書体
@@ -136,10 +152,34 @@
 
     <section class="panel" id="panel-library" hidden>
       <div id="lib-list" class="lib-list"></div>
-      <label class="import-label">印定義(JSON)を取り込む
-        <input type="file" id="f-import" accept=".json,application/json">
-      </label>
+      <fieldset>
+        <legend>バックアップ</legend>
+        <div class="btn-row"><button id="btn-backup-export" type="button">すべて書き出す</button></div>
+        <div id="export-wrap" hidden>
+          <label>書き出した内容 <textarea id="export-box" rows="4" readonly></textarea></label>
+          <div class="btn-row"><button id="btn-export-copy" type="button">コピー</button></div>
+          <p class="hint">ファイルのダウンロードが始まらない場合は、「コピー」してメモ帳に貼り付け、拡張子 .json で保存してください。</p>
+        </div>
+        <p class="hint">印・定型文・書式プリセット・会社休日・押印履歴を1つにまとめて書き出します。データはこのPCのOfficeの中にだけ保存されていて、キャッシュの削除やPCの入れ替えで消えるため、ときどき書き出しておくことをおすすめします。</p>
+      </fieldset>
+      <fieldset>
+        <legend>取り込み</legend>
+        <label class="import-label">ファイルを選ぶ(印定義 / バックアップ)
+          <input type="file" id="f-import" accept=".json,application/json">
+        </label>
+        <label>または、内容を貼り付ける <textarea id="import-text" rows="3" placeholder="書き出した内容(JSON)を貼り付け"></textarea></label>
+        <div class="btn-row"><button id="btn-import-text" type="button">貼り付けた内容を取り込む</button></div>
+      </fieldset>
       <p class="hint">⚠ 書き出したJSONを他人に渡すと、欠けを含め完全な複製が作れます。自分だけの印として使う場合は共有しないでください。</p>
+    </section>
+
+    <section class="panel" id="panel-history" hidden>
+      <div class="btn-row">
+        <button id="btn-history-export" type="button">一覧を書き出す</button>
+        <button id="btn-history-clear" type="button" class="danger">履歴を消去</button>
+      </div>
+      <div id="history-list" class="clean-list"></div>
+      <p class="hint">このPCで押した記録です(新しい順に200件を表示、保存は最大500件)。Excelでは「一覧を書き出す」で新しいシートに出力します。</p>
     </section>
   </section>
 
@@ -166,11 +206,22 @@
         <button id="btn-diff-refresh" type="button">シート一覧を更新</button>
         <button id="btn-diff-toggle" type="button" hidden>色付けを消す</button>
       </div>
+      <label>比較する内容
+        <select id="diff-mode">
+          <option value="text">表示されている値</option>
+          <option value="formulas">数式(入力されている内容)</option>
+        </select>
+      </label>
+      <label class="opt"><input type="checkbox" id="chk-diff-align" checked> 行の挿入・削除を考慮して対応付ける</label>
       <label class="opt"><input type="checkbox" id="chk-diff-highlight" checked> 差分セルを比較先(B)で色付けする</label>
       <button class="primary" id="btn-diff-run" type="button">比較する</button>
       <p id="diff-summary" class="tool-lead"></p>
       <div id="diff-list" class="diff-list"></div>
-      <p class="hint">再比較すると前回の色付けは自動で消えます。「色付けを消す/付け直す」でいつでも切り替えられます。※色付けを消す際、そのセルの塗りつぶしは「なし」に戻ります(元から色が付いていたセルの色は復元されません)。</p>
+      <div class="btn-row"><button id="btn-diff-export" type="button" hidden>結果を新しいシートに出力</button></div>
+      <label class="import-label">別のブックと比べる(そのブックのシートをこのブックに取り込みます)
+        <input type="file" id="diff-import" accept=".xlsx,.xlsm">
+      </label>
+      <p class="hint">再比較すると前回の色付けは自動で消えます。「色付けを消す/付け直す」でいつでも切り替えられ、消すときは元の塗りつぶし色に戻ります。行の対応付けは、内容が完全に同じ行を手がかりにして、行の追加・削除を見分けます。</p>
     </div>
   </section>
 
@@ -215,11 +266,13 @@
         <legend>文例の追加・編集</legend>
         <label>タイトル <input type="text" id="snip-title" placeholder="例: 確認依頼"></label>
         <label>本文 <textarea id="snip-text" rows="4" placeholder="挿入したい文章"></textarea></label>
+        <p class="hint">本文に {今日} {和暦} {曜日} {時刻} {氏名} と書くと、挿入するときの値に置き換わります。</p>
         <div class="btn-row">
           <button class="primary" id="btn-snip-save" type="button">追加</button>
           <button id="btn-snip-new" type="button">新規</button>
         </div>
       </fieldset>
+      <label>差し込み用の氏名({氏名} に入る名前) <input type="text" id="snip-profile-name" placeholder="例: 藤川"></label>
       <p class="hint">「挿入」で、Excelは選択セル、Wordはカーソル位置に入ります。</p>
     </div>
   </section>
@@ -236,7 +289,17 @@
       <h3 class="clean-h">カスタムスタイル <span id="clean-styles-count" class="count"></span>
         <button id="btn-clean-styles" type="button" class="danger mini" hidden>全削除</button></h3>
       <div id="clean-styles" class="clean-list"><p class="empty">スキャンすると表示されます。</p></div>
-      <p class="hint">削除は元に戻せません。実行前にブックのバックアップをおすすめします。</p>
+      <h3 class="clean-h">外部ブックへのリンク <span id="clean-links-count" class="count"></span></h3>
+      <div id="clean-links" class="clean-list"><p class="empty">スキャンすると表示されます。</p></div>
+      <h3 class="clean-h">コメント・メモ <span id="clean-comments-count" class="count"></span>
+        <button id="btn-clean-comments" type="button" class="danger mini" hidden>全削除</button></h3>
+      <div id="clean-comments" class="clean-list"><p class="empty">スキャンすると表示されます。</p></div>
+      <h3 class="clean-h">作成者などの情報
+        <button id="btn-clean-props" type="button" class="danger mini" hidden>消去</button></h3>
+      <div id="clean-props" class="clean-list"><p class="empty">スキャンすると表示されます。</p></div>
+      <h3 class="clean-h">書式だけが残っている範囲 <span id="clean-bloat-count" class="count"></span></h3>
+      <div id="clean-bloat" class="clean-list"><p class="empty">スキャンすると表示されます。</p></div>
+      <p class="hint">削除は元に戻せません。実行前にブックのバックアップをおすすめします。外部リンクは数式を直すか値に置き換えてください。書式だけが残っている範囲は、不要な行・列を削除して保存すると解消します。</p>
     </div>
   </section>
 
@@ -247,9 +310,11 @@
         <input type="date" id="dt-date">
         <button id="btn-dt-today" type="button">今日</button>
       </div>
+      <p class="tool-lead" id="dt-holiday"></p>
       <div id="dt-formats" class="clean-list"></div>
       <fieldset>
         <legend>営業日計算(土日を除く)</legend>
+        <label class="opt"><input type="checkbox" id="dt-biz-holidays" checked> 祝日・会社休日も除く</label>
         <div class="save-row">
           <input type="number" id="dt-biz-n" value="5" step="1"> 営業日後
           <button id="btn-dt-biz-calc" type="button">計算</button>
@@ -257,20 +322,27 @@
         <p class="tool-lead" id="dt-biz-result"></p>
         <button id="btn-dt-biz-insert" type="button" hidden>この日付を挿入</button>
       </fieldset>
-      <p class="hint">祝日は考慮しません(将来対応予定)。マイナスの営業日でさかのぼりも可能です。</p>
+      <fieldset>
+        <legend>会社休日</legend>
+        <label>1行に1日(例: 2026-12-29 年末休業) <textarea id="dt-custom-holidays" rows="4" placeholder="2026-12-29&#10;2026-12-30"></textarea></label>
+        <div class="btn-row"><button id="btn-dt-holidays-save" type="button">会社休日を保存</button></div>
+      </fieldset>
+      <p class="hint">祝日は現行の祝日法をもとに計算しています(振替休日・国民の休日を含む。春分・秋分は計算による予測です)。マイナスの営業日でさかのぼりも可能です。</p>
     </div>
   </section>
 
-  <script src="js/stamp.js?v=20261012b"></script>
-  <script src="js/storage.js?v=20261012b"></script>
-  <script src="js/excel.js?v=20261012b"></script>
-  <script src="js/shell.js?v=20261012b"></script>
-  <script src="js/app.js?v=20261012b"></script>
-  <script src="js/tools/reset.js?v=20261012b"></script>
-  <script src="js/tools/diff.js?v=20261012b"></script>
-  <script src="js/tools/format.js?v=20261012b"></script>
-  <script src="js/tools/snippets.js?v=20261012b"></script>
-  <script src="js/tools/cleanup.js?v=20261012b"></script>
-  <script src="js/tools/datetool.js?v=20261012b"></script>
+  <script src="js/stamp.js?v=dev"></script>
+  <script src="js/storage.js?v=dev"></script>
+  <script src="js/holidays.js?v=dev"></script>
+  <script src="js/excel.js?v=dev"></script>
+  <script src="js/stampaction.js?v=dev"></script>
+  <script src="js/shell.js?v=dev"></script>
+  <script src="js/app.js?v=dev"></script>
+  <script src="js/tools/reset.js?v=dev"></script>
+  <script src="js/tools/diff.js?v=dev"></script>
+  <script src="js/tools/format.js?v=dev"></script>
+  <script src="js/tools/snippets.js?v=dev"></script>
+  <script src="js/tools/cleanup.js?v=dev"></script>
+  <script src="js/tools/datetool.js?v=dev"></script>
 </body>
 </html>

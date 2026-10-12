@@ -11,6 +11,8 @@
 }
 
 * { box-sizing: border-box; }
+/* display 指定のある要素(.opt など)でも hidden 属性で確実に隠す */
+[hidden] { display: none !important; }
 
 body {
   margin: 0;
@@ -228,3 +230,12 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px
 .clean-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; display: flex; flex-direction: column; }
 .dt-label { font-size: 9.5px; color: var(--muted); }
 .dt-text { font-size: 12px; }
+
+/* ---- 押印日・検証結果・書き出し ---- */
+.save-row label { font-size: 11px; color: var(--muted); margin: 0; }
+#panel-stamp .save-row { margin: 0 0 4px; }
+#verify-list { margin-top: 6px; }
+.verify-result { flex: 0 0 auto; font-size: 10.5px; color: var(--muted); }
+.clean-row.ng { border-color: #A11A00; }
+.clean-row.ng .verify-result { color: #A11A00; font-weight: 700; }
+#export-box, #import-text { font-family: Consolas, monospace; font-size: 10.5px; }

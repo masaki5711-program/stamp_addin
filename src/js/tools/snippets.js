@@ -22,7 +22,36 @@
 
   function saveList(list) { Store.writeKey(KEY, list); }
 
+  var YOBI = ["日", "月", "火", "水", "木", "金", "土"];
+  var NAME_KEY = "profile.name";
+
+  function pad2(n) { return String(n).padStart(2, "0"); }
+
+  // 例: 令和8年10月12日(元号と年はブラウザの和暦カレンダーから取る)
+  function wareki(d) {
+    var era = "", year = "";
+    new Intl.DateTimeFormat("ja-JP-u-ca-japanese", { era: "long", year: "numeric" }).formatToParts(d).forEach(function (p) {
+      if (p.type === "era") era = p.value;
+      if (p.type === "year") year = p.value;
+    });
+    return era + (year === "1" ? "元" : year) + "年" + (d.getMonth() + 1) + "月" + d.getDate() + "日";
+  }
+
+  // 本文中の {今日} {和暦} {曜日} {時刻} {氏名} を挿入時の値に置き換える
+  function expand(text, now) {
+    now = now || new Date();
+    var vars = {
+      "今日": now.getFullYear() + "/" + pad2(now.getMonth() + 1) + "/" + pad2(now.getDate()),
+      "和暦": wareki(now),
+      "曜日": YOBI[now.getDay()],
+      "時刻": pad2(now.getHours()) + ":" + pad2(now.getMinutes()),
+      "氏名": Store.readKey(NAME_KEY, "")
+    };
+    return text.replace(/\{(今日|和暦|曜日|時刻|氏名)\}/g, function (_, k) { return vars[k]; });
+  }
+
   function insertText(text) {
+    text = expand(text);
     var host = XL.hostType();
     if (host === "excel") {
       return Excel.run(function (ctx) {
@@ -115,10 +144,16 @@
     name: "定型文",
     desc: "よく使う文例を保存してワンクリック挿入",
     hosts: ["excel", "word", "browser"],
+    _test: { expand: expand },
     init: function () {
       render();
       $("btn-snip-save").addEventListener("click", save);
       $("btn-snip-new").addEventListener("click", function () { resetForm(); $("snip-title").focus(); });
+      $("snip-profile-name").value = Store.readKey(NAME_KEY, "");
+      $("snip-profile-name").addEventListener("change", function () {
+        Store.writeKey(NAME_KEY, this.value.trim().slice(0, 60));
+        UI.status("差し込み用の氏名を保存しました");
+      });
     }
   });
 })();

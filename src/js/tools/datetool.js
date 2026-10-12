@@ -45,15 +45,14 @@
     return out;
   }
 
-  /** 営業日加算(土日を除く。nは正負どちらも可、0はそのまま) */
-  function addBusinessDays(d, n) {
+  /** 営業日加算(土日を除く。useHolidays なら祝日・会社休日も除く。nは正負どちらも可、0はそのまま) */
+  function addBusinessDays(d, n, useHolidays) {
     var out = new Date(d.getTime());
     var step = n >= 0 ? 1 : -1;
     var remain = Math.abs(n);
     while (remain > 0) {
       out.setDate(out.getDate() + step);
-      var dow = out.getDay();
-      if (dow !== 0 && dow !== 6) remain--;
+      if (Holidays.isBusinessDay(out, useHolidays)) remain--;
     }
     return out;
   }
@@ -85,6 +84,8 @@
   function renderFormats() {
     var host = $("dt-formats");
     host.innerHTML = "";
+    var hname = Holidays.nameOf(currentDate());
+    $("dt-holiday").textContent = hname ? "この日は休日です: " + hname : "";
     var inOffice = XL.isOffice();
     formatsOf(currentDate()).forEach(function (f) {
       var row = document.createElement("div");
@@ -107,7 +108,7 @@
 
   function calcBiz() {
     var n = parseInt($("dt-biz-n").value, 10) || 0;
-    var r = addBusinessDays(currentDate(), n);
+    var r = addBusinessDays(currentDate(), n, $("dt-biz-holidays").checked);
     var w = toWareki(r);
     $("dt-biz-result").textContent =
       r.getFullYear() + "/" + pad2(r.getMonth() + 1) + "/" + pad2(r.getDate()) +
@@ -132,6 +133,13 @@
       renderFormats();
       $("dt-date").addEventListener("change", function () { renderFormats(); $("btn-dt-biz-insert").hidden = true; $("dt-biz-result").textContent = ""; });
       $("btn-dt-biz-calc").addEventListener("click", calcBiz);
+      $("dt-custom-holidays").value = Holidays.customList().join("\n");
+      $("btn-dt-holidays-save").addEventListener("click", function () {
+        var list = Holidays.saveCustom($("dt-custom-holidays").value);
+        $("dt-custom-holidays").value = list.join("\n");
+        renderFormats();
+        UI.status("会社休日を" + list.length + "日登録しました");
+      });
       $("btn-dt-biz-insert").addEventListener("click", function () {
         var t = this.dataset.text;
         if (!t) return;
