@@ -31,6 +31,9 @@
     $("f-diameter").value = def.frame.diameterMm;
     $("f-stroke").value = def.frame.strokeWidthMm;
     $("f-dividers").checked = !!def.frame.dividers;
+    $("f-double-frame").checked = !!def.frame.doubleFrame;
+    $("f-double-dividers").checked = !!def.frame.doubleDividers;
+    $("f-code-on-frame").checked = !!def.options.codeOnFrame;
     $("f-ink").value = def.color.ink;
     $("f-tilt-on-stamp").value = def.options.randomTiltOnStampDeg;
 
@@ -56,6 +59,9 @@
     editing.frame.diameterMm = clamp(parseFloat($("f-diameter").value) || 12, 8, 30);
     editing.frame.strokeWidthMm = clamp(parseFloat($("f-stroke").value) || 0.35, 0.2, 1.2);
     editing.frame.dividers = $("f-dividers").checked;
+    editing.frame.doubleFrame = $("f-double-frame").checked;
+    editing.frame.doubleDividers = $("f-double-dividers").checked;
+    editing.options.codeOnFrame = $("f-code-on-frame").checked;
     editing.color.ink = $("f-ink").value;
     editing.options.randomTiltOnStampDeg = clamp(parseFloat($("f-tilt-on-stamp").value) || 0, 0, 5);
 

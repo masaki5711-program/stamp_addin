@@ -86,7 +86,7 @@
       id: "stamp_" + newSeedHex().slice(0, 12),
       name: "",
       createdAt: null,
-      frame: { shape: "circle", diameterMm: 12, strokeWidthMm: 0.35, dividers: true },
+      frame: { shape: "circle", diameterMm: 12, strokeWidthMm: 0.35, dividers: true, doubleFrame: false, doubleDividers: false },
       color: { ink: INK_PRESETS.shu },
       rows: [
         { role: "text", enabled: true, text: "営業部", font: "mincho", heightRatio: 0.28, tiltDeg: 0, letterSpacing: 0.08, lineScales: [1], bold: false },
@@ -94,8 +94,26 @@
         { role: "text", enabled: true, text: "藤川", font: "mincho", heightRatio: 0.28, tiltDeg: 0, letterSpacing: 0.15, lineScales: [1], bold: false }
       ],
       wear: { seed: null },
-      options: { randomTiltOnStampDeg: 3 }
+      options: { randomTiltOnStampDeg: 3, codeOnFrame: false }
     };
+  }
+
+  /* ---- 枠の寸法 ----
+   * innerR は文字・区切り線を収める内側の半径。
+   * 二重枠(frame.doubleFrame)のときは外枠の内側にすき間を空けて細い内枠を引く。
+   */
+  function frameGeom(def) {
+    var S = def.frame.diameterMm * 10;
+    var c = S / 2;
+    var strokeW = def.frame.strokeWidthMm * 10;
+    var g = { S: S, c: c, strokeW: strokeW, frameR: c - strokeW / 2, innerR: c - strokeW, inner: null, gapR: 0 };
+    if (def.frame.doubleFrame) {
+      var gap = S * 0.035, w2 = strokeW * 0.5;
+      g.gapR = g.innerR - gap / 2;
+      g.inner = { r: g.innerR - gap - w2 / 2, w: w2 };
+      g.innerR = g.inner.r - w2 / 2;
+    }
+    return g;
   }
 
   /* ---- 欠けの導出(シードから決定論的) ----
@@ -106,11 +124,8 @@
   function deriveWear(def) {
     if (!def.wear || !def.wear.seed) return [];
     var rnd = rngFromSeed(def.wear.seed);
-    var S = def.frame.diameterMm * 10;
-    var c = S / 2;
-    var strokeW = def.frame.strokeWidthMm * 10;
-    var frameR = c - strokeW / 2;
-    var innerR = c - strokeW;
+    var g = frameGeom(def);
+    var c = g.c, strokeW = g.strokeW, frameR = g.frameR, innerR = g.innerR;
     var nicks = [];
 
     // 枠のニック: 3〜6箇所。外縁/内縁のどちらかを接線方向に浅く欠く
@@ -170,9 +185,8 @@
 
   // 有効行の帯(バンド)の上端/下端を返す
   function bands(def) {
-    var S = def.frame.diameterMm * 10;
-    var c = S / 2;
-    var innerR = c - def.frame.strokeWidthMm * 10;
+    var g = frameGeom(def);
+    var c = g.c, innerR = g.innerR;
     var top = c - innerR * 0.96, bottom = c + innerR * 0.96;
     var rows = enabledRows(def);
     var total = rows.reduce(function (s, r) { return s + r.heightRatio; }, 0) || 1;
@@ -190,6 +204,37 @@
     var ys = [];
     for (var i = 1; i < bs.length; i++) ys.push(bs[i].y0);
     return ys;
+  }
+
+  /* ---- 文字幅のはめ込み ---- */
+
+  var measureCtx = null;
+
+  // フォントサイズ1あたりの文字列幅(字送り込み)。canvasが使えない環境は概算にフォールバック
+  function widthPerEm(text, family, weight, letterSpacing) {
+    var n = Array.from(text).length;
+    var w;
+    try {
+      if (!measureCtx) measureCtx = document.createElement("canvas").getContext("2d");
+      measureCtx.font = weight + " 100px " + family;
+      w = measureCtx.measureText(text).width / 100;
+    } catch (e) {
+      w = Array.from(text).reduce(function (a, ch) { return a + (ch.charCodeAt(0) < 0x2000 ? 0.6 : 1); }, 0);
+    }
+    return w + n * letterSpacing;
+  }
+
+  // 円の内側(その高さでの弦の幅)に収まる最大のフォントサイズを返す。収まっていれば fontSize のまま
+  function fitFontSize(fontSize, perEm, cy, c, innerR) {
+    if (perEm <= 0) return fontSize;
+    var f = fontSize;
+    for (var i = 0; i < 8; i++) {
+      var d = Math.abs(cy - c) + f * 0.45; // 文字の上下端のうち中心から遠い側
+      var avail = 2 * Math.sqrt(Math.max(0, innerR * innerR - d * d)) * 0.94;
+      if (perEm * f <= avail) break;
+      f = Math.min(f * 0.95, avail / perEm);
+    }
+    return f;
   }
 
   /* ---- SVG描画 ---- */
@@ -211,11 +256,8 @@
     var tilt = opts.tiltDeg || 0;
     var showWear = opts.showWear !== false;
 
-    var S = def.frame.diameterMm * 10;
-    var c = S / 2;
-    var strokeW = def.frame.strokeWidthMm * 10;
-    var frameR = c - strokeW / 2;
-    var innerR = c - strokeW;
+    var g = frameGeom(def);
+    var S = g.S, c = g.c, strokeW = g.strokeW, frameR = g.frameR, innerR = g.innerR;
     var ink = def.color.ink;
 
     var nicks = showWear ? deriveWear(def) : [];
@@ -232,13 +274,21 @@
 
     s += '<g mask="url(#' + maskId + ')" transform="rotate(' + tilt.toFixed(2) + " " + c + " " + c + ')">';
     s += '<circle cx="' + c + '" cy="' + c + '" r="' + frameR + '" fill="none" stroke="' + ink + '" stroke-width="' + strokeW + '"/>';
+    if (g.inner) {
+      s += '<circle cx="' + c + '" cy="' + c + '" r="' + g.inner.r.toFixed(2) + '" fill="none" stroke="' + ink + '" stroke-width="' + g.inner.w.toFixed(2) + '"/>';
+    }
 
     if (def.frame.dividers) {
-      dividerYs(def).forEach(function (y) {
-        var dy = y - c;
-        var half = Math.sqrt(Math.max(0, innerR * innerR - dy * dy)) * 0.99;
-        s += '<line x1="' + (c - half).toFixed(2) + '" y1="' + y.toFixed(2) + '" x2="' + (c + half).toFixed(2) + '" y2="' + y.toFixed(2) +
-          '" stroke="' + ink + '" stroke-width="' + (strokeW * 0.7).toFixed(2) + '"/>';
+      // 二重線(frame.doubleDividers)は細線2本を上下に振り分ける
+      var dbl = !!def.frame.doubleDividers;
+      var divW = strokeW * (dbl ? 0.4 : 0.7);
+      dividerYs(def).forEach(function (y0) {
+        (dbl ? [y0 - strokeW * 0.55, y0 + strokeW * 0.55] : [y0]).forEach(function (y) {
+          var dy = y - c;
+          var half = Math.sqrt(Math.max(0, innerR * innerR - dy * dy)) * 0.99;
+          s += '<line x1="' + (c - half).toFixed(2) + '" y1="' + y.toFixed(2) + '" x2="' + (c + half).toFixed(2) + '" y2="' + y.toFixed(2) +
+            '" stroke="' + ink + '" stroke-width="' + divW.toFixed(2) + '"/>';
+        });
       });
     }
 
@@ -266,10 +316,12 @@
         var cy = y + h / 2;
         y += h;
         if (!line.trim()) return;
-        var fontSize = h * 0.68;
-        inner += '<text x="' + c + '" y="' + (cy + fontSize * 0.34).toFixed(2) + '" text-anchor="middle" fill="' + ink +
+        var family = FONT_MAP[row.font || "gothic"];
+        // 文字数が多い行は、円からはみ出さない大きさまで縮める
+        var fontSize = fitFontSize(h * 0.68, widthPerEm(line, family, weight, row.letterSpacing || 0), cy, c, innerR);
+        inner +='<text x="' + c + '" y="' + (cy + fontSize * 0.34).toFixed(2) + '" text-anchor="middle" fill="' + ink +
           '" font-size="' + fontSize.toFixed(2) + '" font-weight="' + weight +
-          '" font-family=\'' + FONT_MAP[row.font || "gothic"] + "'" +
+          '" font-family=\'' + family + "'" +
           ' letter-spacing="' + ((row.letterSpacing || 0) * fontSize).toFixed(2) + '"' +
           ">" + esc(line) + "</text>";
       });
@@ -279,8 +331,18 @@
         : inner;
     });
 
-    // マイクロ文字(検証コード): 日付段の下端に約0.25mmで印字
-    if (opts.microtext) {
+    // マイクロ文字(検証コード): 約0.25mm。options.codeOnFrame のときは枠の下側に沿わせる
+    // (二重枠なら外枠と内枠のすき間、単枠なら枠のすぐ内側)。それ以外は日付段の下端に印字
+    if (opts.microtext && def.options && def.options.codeOnFrame) {
+      var csize = S * 0.021;
+      var rb = g.inner ? g.gapR + csize * 0.35 : innerR - csize * 0.5;
+      var arcId = maskId + "_code";
+      s += '<path id="' + arcId + '" fill="none" d="M' + (c - rb).toFixed(2) + " " + c + " A" + rb.toFixed(2) + " " + rb.toFixed(2) +
+        " 0 0 0 " + (c + rb).toFixed(2) + " " + c + '"/>';
+      s += '<text fill="' + ink + '" font-size="' + csize.toFixed(2) + '" font-family="Consolas, monospace" letter-spacing="' +
+        (csize * 0.25).toFixed(2) + '" text-anchor="middle"><textPath href="#' + arcId + '" startOffset="50%">' +
+        esc(opts.microtext) + "</textPath></text>";
+    } else if (opts.microtext) {
       var bs = bands(def);
       var target = bs.find(function (b) { return b.row.role === "date"; }) || bs[bs.length - 1];
       if (target) {
